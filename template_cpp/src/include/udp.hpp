@@ -1,7 +1,6 @@
-#include <parser.hpp>
 #include <cstddef>
 #include <exception>
-#include <string>
+#include <parser.hpp>
 
 class UdpException : std::exception {
   public:
@@ -22,12 +21,6 @@ class UdpSocket {
 
     size_t sendTo(const void *data, size_t size, const Host &host);
     size_t recvFrom(void *buffer, size_t size, Host &host);
-
-    struct Recv {
-        std::string ip;
-        int port;
-        int size;
-    };
 
   private:
     int fd;

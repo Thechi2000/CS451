@@ -262,9 +262,7 @@ class ArgumentParser {
 
 class ConfigParser {
   public:
-    ConfigParser(const std::string &path) {
-        parse(path);
-    }
+    ConfigParser(const std::string &path) { parse(path); }
 
     struct ConfigEntry {
         size_t id;

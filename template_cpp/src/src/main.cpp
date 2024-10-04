@@ -1,9 +1,13 @@
 #include <chrono>
+#include <fstream>
+#include <ios>
 #include <iostream>
+#include <string>
 #include <thread>
 
 #include "hello.h"
 #include "parser.hpp"
+#include <pl.hpp>
 #include <signal.h>
 
 static void stop(int) {
@@ -73,6 +77,36 @@ int main(int argc, char **argv) {
     std::cout << std::endl << std::endl;
 
     std::cout << "Broadcasting and delivering messages...\n\n";
+
+    PerfectLink pl(hosts[argumentParser.id()]);
+
+    std::fstream out(argumentParser.outputPath(),
+                     std::ios_base::out | std::ios_base::trunc);
+
+    if (argumentParser.id() == 1) {
+        while (true) {
+            char buffer[1025];
+            Host h;
+            size_t size = pl.recvFrom(buffer, 1024, h);
+            buffer[size] = 0;
+
+            size_t i;
+            for (i = 0; i < hosts.size(); i++) {
+                if (hosts[i].ip == h.ip && hosts[i].port == h.port) {
+                    break;
+                }
+            }
+
+            out << "d " << i << " " << buffer << std::endl;
+        }
+    } else {
+        for (auto &entry : configParser.entries()) {
+            for (size_t i = 0; i < entry.count; ++i) {
+                std::string s = std::to_string(i);
+                pl.sendTo(s.c_str(), s.length(), hosts[entry.id]);
+            }
+        }
+    }
 
     // After a process finishes broadcasting,
     // it waits forever for the delivery of messages.
