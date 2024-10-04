@@ -1,3 +1,4 @@
+#include <parser.hpp>
 #include <cstddef>
 #include <exception>
 #include <string>
@@ -16,12 +17,11 @@ class UdpException : std::exception {
 
 class UdpSocket {
   public:
-    UdpSocket(const std::string &ip, int port);
+    UdpSocket(const Host &host);
     ~UdpSocket();
 
-    size_t sendTo(const void *data, size_t size, const std::string &ip,
-                  int port);
-    size_t recvFrom(void *buffer, size_t size, std::string &ip, int &port);
+    size_t sendTo(const void *data, size_t size, const Host &host);
+    size_t recvFrom(void *buffer, size_t size, Host &host);
 
     struct Recv {
         std::string ip;

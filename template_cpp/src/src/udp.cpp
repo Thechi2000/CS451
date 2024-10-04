@@ -1,6 +1,5 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <string>
 #include <sys/socket.h>
 #include <udp.hpp>
 #include <unistd.h>
@@ -21,16 +20,11 @@ const char *UdpException::what() const noexcept {
     return "UDP ERROR: unknown";
 }
 
-UdpSocket::UdpSocket(const std::string &ip, int port) {
+UdpSocket::UdpSocket(const Host &host) {
     fd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    struct in_addr dest = {0};
-    if (inet_aton(ip.c_str(), &dest) < 0) {
-        throw UdpException(UdpException::Type::INVALID_IP);
-    }
-
-    struct sockaddr_in server = {
-        .sin_family = AF_INET, .sin_port = htons(port), .sin_addr = dest};
+    struct sockaddr_in server = {.sin_family = AF_INET,
+                                 .sin_port = host.port,
+                                 .sin_addr = {.s_addr = host.ip}};
 
     // Bind the socket to the address
     if (bind(fd, (struct sockaddr *)&server, sizeof(server)) < 0) {
@@ -39,15 +33,12 @@ UdpSocket::UdpSocket(const std::string &ip, int port) {
 }
 UdpSocket::~UdpSocket() { close(fd); }
 
-size_t UdpSocket::sendTo(const void *data, size_t size, const std::string &ip,
-                         int port) {
+size_t UdpSocket::sendTo(const void *data, size_t size, const Host &host) {
     struct in_addr dest = {0};
-    if (inet_aton(ip.c_str(), &dest) < 0) {
-        throw UdpException(UdpException::Type::INVALID_IP);
-    }
 
-    struct sockaddr_in server = {
-        .sin_family = AF_INET, .sin_port = htons(port), .sin_addr = dest};
+    struct sockaddr_in server = {.sin_family = AF_INET,
+                                 .sin_port = host.port,
+                                 .sin_addr = {.s_addr = host.ip}};
     auto server_len = sizeof(server);
 
     auto sent =
@@ -59,8 +50,7 @@ size_t UdpSocket::sendTo(const void *data, size_t size, const std::string &ip,
 
     return sent;
 }
-size_t UdpSocket::recvFrom(void *buffer, size_t size, std::string &ip,
-                           int &port) {
+size_t UdpSocket::recvFrom(void *buffer, size_t size, Host &host) {
     struct sockaddr_in server;
     socklen_t server_len;
 
@@ -71,8 +61,8 @@ size_t UdpSocket::recvFrom(void *buffer, size_t size, std::string &ip,
         throw UdpException(UdpException::Type::RECEIVE);
     }
 
-    ip = std::string(inet_ntoa(server.sin_addr));
-    port = ntohs(server.sin_port);
+    host.ip = server.sin_addr.s_addr;
+    host.port = server.sin_port;
 
     return received;
 }
