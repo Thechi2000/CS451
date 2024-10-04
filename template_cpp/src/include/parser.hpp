@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <fstream>
 #include <iostream>
+#include <istream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -19,17 +21,18 @@
 #include <host.hpp>
 #include <unistd.h>
 
-class Parser {
+class ArgumentParser {
   public:
-    Parser(const int argc, char const *const *argv, bool withConfig = true)
-        : argc{argc}, argv{argv}, withConfig{withConfig}, parsed{false} {}
+    ArgumentParser(const int argc, char const *const *argv,
+                   bool withConfig = true)
+        : argc_{argc}, argv_{argv}, withConfig_{withConfig}, parsed_{false} {}
 
     void parse() {
         if (!parseInternal()) {
-            help(argc, argv);
+            help(argc_, argv_);
         }
 
-        parsed = true;
+        parsed_ = true;
     }
 
     unsigned long id() const {
@@ -49,7 +52,7 @@ class Parser {
 
     const char *configPath() const {
         checkParsed();
-        if (!withConfig) {
+        if (!withConfig_) {
             throw std::runtime_error(
                 "Parser is configure to ignore the config path");
         }
@@ -143,7 +146,7 @@ class Parser {
         std::cerr << "Usage: " << argv[0]
                   << " --id ID --hosts HOSTS --output OUTPUT";
 
-        if (!withConfig) {
+        if (!withConfig_) {
             std::cerr << "\n";
         } else {
             std::cerr << " CONFIG\n";
@@ -153,14 +156,14 @@ class Parser {
     }
 
     bool parseID() {
-        if (argc < 3) {
+        if (argc_ < 3) {
             return false;
         }
 
-        if (std::strcmp(argv[1], "--id") == 0) {
-            if (isPositiveNumber(argv[2])) {
+        if (std::strcmp(argv_[1], "--id") == 0) {
+            if (isPositiveNumber(argv_[2])) {
                 try {
-                    id_ = std::stoul(argv[2]);
+                    id_ = std::stoul(argv_[2]);
                 } catch (std::invalid_argument const &e) {
                     return false;
                 } catch (std::out_of_range const &e) {
@@ -175,12 +178,12 @@ class Parser {
     }
 
     bool parseHostPath() {
-        if (argc < 5) {
+        if (argc_ < 5) {
             return false;
         }
 
-        if (std::strcmp(argv[3], "--hosts") == 0) {
-            hostsPath_ = std::string(argv[4]);
+        if (std::strcmp(argv_[3], "--hosts") == 0) {
+            hostsPath_ = std::string(argv_[4]);
             return true;
         }
 
@@ -188,12 +191,12 @@ class Parser {
     }
 
     bool parseOutputPath() {
-        if (argc < 7) {
+        if (argc_ < 7) {
             return false;
         }
 
-        if (std::strcmp(argv[5], "--output") == 0) {
-            outputPath_ = std::string(argv[6]);
+        if (std::strcmp(argv_[5], "--output") == 0) {
+            outputPath_ = std::string(argv_[6]);
             return true;
         }
 
@@ -201,15 +204,15 @@ class Parser {
     }
 
     bool parseConfigPath() {
-        if (!withConfig) {
+        if (!withConfig_) {
             return true;
         }
 
-        if (argc < 8) {
+        if (argc_ < 8) {
             return false;
         }
 
-        configPath_ = std::string(argv[7]);
+        configPath_ = std::string(argv_[7]);
         return true;
     }
 
@@ -221,7 +224,7 @@ class Parser {
     }
 
     void checkParsed() const {
-        if (!parsed) {
+        if (!parsed_) {
             throw std::runtime_error("Invoke parse() first");
         }
     }
@@ -245,14 +248,59 @@ class Parser {
     }
 
   private:
-    const int argc;
-    char const *const *argv;
-    bool withConfig;
+    const int argc_;
+    char const *const *argv_;
+    bool withConfig_;
 
-    bool parsed;
+    bool parsed_;
 
     unsigned long id_;
     std::string hostsPath_;
     std::string outputPath_;
     std::string configPath_;
+};
+
+class ConfigParser {
+  public:
+    ConfigParser(const std::string &path) {
+        parse(path);
+    }
+
+    struct ConfigEntry {
+        size_t id;
+        size_t count;
+    };
+
+    const std::vector<ConfigEntry> &entries() const { return entries_; }
+
+    void print() {
+        for (auto &it : entries_) {
+            std::cout << "Send " << it.count << " to " << it.id << std::endl;
+        }
+    }
+
+  private:
+    void parse(const std::string &path) {
+        std::fstream input(path);
+
+        while (true) {
+            std::string line;
+            std::getline(input, line);
+
+            if (line.empty()) {
+                break;
+            }
+
+            size_t delim = line.find_first_of(' ');
+            auto entry = ConfigEntry{
+                static_cast<size_t>(std::stoi(
+                    std::string(line.begin() + delim + 1, line.end()))),
+                static_cast<size_t>(
+                    std::stoi(std::string(line.begin(), line.begin() + delim))),
+            };
+            entries_.push_back(entry);
+        }
+    }
+
+    std::vector<ConfigEntry> entries_;
 };

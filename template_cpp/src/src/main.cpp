@@ -29,8 +29,8 @@ int main(int argc, char **argv) {
     // Call with `false` if no config file is necessary.
     bool requireConfig = true;
 
-    Parser parser(argc, argv);
-    parser.parse();
+    ArgumentParser argumentParser(argc, argv);
+    argumentParser.parse();
 
     hello();
     std::cout << std::endl;
@@ -40,11 +40,11 @@ int main(int argc, char **argv) {
               << "` or `kill -SIGTERM " << getpid()
               << "` to stop processing packets\n\n";
 
-    std::cout << "My ID: " << parser.id() << "\n\n";
+    std::cout << "My ID: " << argumentParser.id() << "\n\n";
 
     std::cout << "List of resolved hosts is:\n";
     std::cout << "==========================\n";
-    auto hosts = parser.hosts();
+    auto hosts = argumentParser.hosts();
     for (auto &host : hosts) {
         std::cout << host.id << "\n";
         std::cout << "Human-readable IP: " << host.ipReadable() << "\n";
@@ -56,14 +56,21 @@ int main(int argc, char **argv) {
     std::cout << "\n";
 
     std::cout << "Path to output:\n";
+    std::cout << argumentParser.outputPath() << "\n\n";
     std::cout << "===============\n";
-    std::cout << parser.outputPath() << "\n\n";
 
     std::cout << "Path to config:\n";
+    std::cout << argumentParser.configPath() << "\n\n";
     std::cout << "===============\n";
-    std::cout << parser.configPath() << "\n\n";
 
     std::cout << "Doing some initialization...\n\n";
+
+    ConfigParser configParser(argumentParser.configPath());
+
+    std::cout << "Config is:" << std::endl;
+    configParser.print();
+    std::cout << "===============\n";
+    std::cout << std::endl << std::endl;
 
     std::cout << "Broadcasting and delivering messages...\n\n";
 
