@@ -3,7 +3,13 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=c,c++
 #
 
-bin/da_proc
+CMakeFiles
+cmake_install.cmake
+Makefile
+CMakeCache.txt
+
+da_proc
+
 target/
 
 ### C ###
