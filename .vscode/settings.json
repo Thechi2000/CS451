@@ -1,0 +1,3 @@
+{
+  "clangd.fallbackFlags": ["-I${workspaceFolder}/template_cpp/src/include"]
+}
