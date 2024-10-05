@@ -21,7 +21,10 @@ string(CONCAT CMAKE_CXX_FLAGS_COMMON_STR ""
                         "-Wmissing-declarations -Wmissing-include-dirs "
                         "-Wredundant-decls -Wstrict-overflow=5 -Wundef "
                         "-Wno-unused -Wctor-dtor-privacy -Wsign-promo "
-                        "-Woverloaded-virtual -Wold-style-cast")
+                        "-Woverloaded-virtual -Wold-style-cast "
+                        #"-g "
+                        #"-fsanitize=address"
+                        )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     string(CONCAT CMAKE_CXX_FLAGS_STR "${CMAKE_CXX_FLAGS_COMMON_STR} "

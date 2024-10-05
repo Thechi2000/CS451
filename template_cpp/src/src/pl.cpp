@@ -2,29 +2,44 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <netinet/in.h>
 #include <optional>
 #include <pl.hpp>
 #include <serde.hpp>
 #include <variant>
 
-PerfectLink::PerfectLink(const Host &host) : socket(host) {}
+PerfectLink::PerfectLink(const Host &host)
+    : sent_(), lastSend_(Clock::now()), socket(host) {}
 PerfectLink::~PerfectLink() {}
 
-void PerfectLink::send(PerfectLink::Message msg, const Host &host) {
+void PerfectLink::send(const Message &msg, const Host &host) {
+    innerSend(msg, host);
+    sent_.push_back({msg, Host(host)});
+
+    std::cout << host.port << " " << Host(host).port << std::endl;
+}
+void PerfectLink::innerSend(const Message &m, const Host &host) {
     uint8_t *buff;
-    size_t size = serialize(msg, &buff);
-
+    size_t size = serialize(m, &buff);
     socket.sendTo(buff, size, host);
-
     free(buff);
 }
-PerfectLink::Message PerfectLink::receive(Host &host) {
+
+std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
     size_t buffer_size = 1024, size = 0;
     uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(buffer_size));
 
+    Host host;
     std::optional<Message> msg = std::nullopt;
     while (!msg.has_value()) {
+        if (Clock::now() - lastSend_ > TIMEOUT) {
+            for (auto pair : sent_) {
+                innerSend(pair.first, pair.second);
+            }
+            lastSend_ = Clock::now();
+        }
+
         size += socket.recvFrom(buffer + size, buffer_size - size, host);
         msg = deserialize(buffer, size);
 
@@ -34,7 +49,7 @@ PerfectLink::Message PerfectLink::receive(Host &host) {
         }
     }
 
-    return msg.value();
+    return {msg.value(), host};
 }
 
 size_t PerfectLink::serialize(const PerfectLink::Message &msg, uint8_t **buff) {

@@ -74,8 +74,9 @@ int main(int argc, char **argv) {
     try {
         if (config.id() == 1) {
             while (true) {
-                Host h;
-                PerfectLink::Message msg = pl.receive(h);
+                auto pair = pl.receive();
+                const auto &msg = pair.first;
+                const auto &h = pair.second;
 
                 auto i =
                     std::find_if(config.hosts().begin(), config.hosts().end(),
@@ -87,6 +88,7 @@ int main(int argc, char **argv) {
                 Broadcast b = std::get<Broadcast>(msg);
                 out << "d " << i << " " << b.content << std::endl;
 
+                std::cout << h.portReadable() << std::endl;
                 pl.send(Deliver{static_cast<uint8_t>(i), b.content}, h);
             }
         } else {
@@ -101,7 +103,7 @@ int main(int argc, char **argv) {
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(-1);
-    } catch(...) {
+    } catch (...) {
         std::cerr << "Caught unknown exception" << std::endl;
         exit(-2);
     }

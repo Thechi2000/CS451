@@ -8,9 +8,10 @@
 #include <stdexcept>
 #include <string>
 
-class Host {
+struct Host {
   public:
     Host() {}
+    Host(const Host &host) : id(host.id), ip(host.ip), port(host.port) {}
     Host(size_t id, const std::string &ip_or_hostname, unsigned short port)
         : id{id}, port{htons(port)} {
 
