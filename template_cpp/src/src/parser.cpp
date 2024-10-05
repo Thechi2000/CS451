@@ -1,13 +1,14 @@
 #include <algorithm>
-#include <iostream>
-#include <sstream>
 #include <fstream>
+#include <iostream>
 #include <parser.hpp>
+#include <sstream>
 
 bool Parser::parseInternal() {
     if (!parseID()) {
         return false;
     }
+    withConfig_ = id_ != 1;
 
     if (!parseHostPath()) {
         return false;
@@ -22,7 +23,12 @@ bool Parser::parseInternal() {
     }
 
     parseHosts();
-    parseConfig();
+    std::cerr << "###" << id_ << " " << withConfig_ << std::endl;
+
+    if (withConfig_) {
+        std::cerr << "Parsing config" << std::endl;
+        parseConfig();
+    }
 
     return true;
 }
@@ -88,6 +94,7 @@ void Parser::parseHosts() {
 }
 
 void Parser::parseConfig() {
+    std::cerr << configPath_ << std::endl;
     std::fstream input(configPath_);
 
     while (true) {

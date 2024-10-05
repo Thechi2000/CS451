@@ -1,10 +1,8 @@
 #include <algorithm>
-#include <chrono>
 #include <fstream>
 #include <ios>
 #include <iostream>
 #include <string>
-#include <thread>
 
 #include "hello.h"
 #include "parser.hpp"
@@ -62,10 +60,6 @@ int main(int argc, char **argv) {
     std::cout << config.outputPath() << "\n\n";
     std::cout << "===============\n";
 
-    std::cout << "Path to config:\n";
-    std::cout << config.configPath() << "\n\n";
-    std::cout << "===============\n";
-
     std::cout << "Doing some initialization...\n\n";
 
     std::cout << "Broadcasting and delivering messages...\n\n";
@@ -94,15 +88,10 @@ int main(int argc, char **argv) {
         for (auto &entry : config.entries()) {
             for (size_t i = 0; i < entry.count; ++i) {
                 std::string s = std::to_string(i);
+                out << "b " << i << std::endl;
                 pl.sendTo(s.c_str(), s.length(), config.host(entry.id));
             }
         }
-    }
-
-    // After a process finishes broadcasting,
-    // it waits forever for the delivery of messages.
-    while (true) {
-        std::this_thread::sleep_for(std::chrono::hours(1));
     }
 
     return 0;
