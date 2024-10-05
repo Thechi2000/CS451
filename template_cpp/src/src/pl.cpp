@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <netinet/in.h>
 #include <optional>
 #include <pl.hpp>
@@ -23,7 +22,7 @@ PerfectLink::~PerfectLink() {}
 void PerfectLink::send(const Payload &p, const Host &host) {
     u32 seq = seq_++;
     innerSend({seq, p}, host);
-    sent_.push_back({{seq, p}, Host(host), std::vector<bool>()});
+    sent_.insert({seq, {{seq, p}, Host(host), false}});
 }
 void PerfectLink::innerSend(const Message &msg, const Host &host) {
     uint8_t *buff;
@@ -41,7 +40,7 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
     while (true) {
         if (Clock::now() - lastSend_ > TIMEOUT) {
             for (const auto &toSend : sent_) {
-                innerSend(toSend.msg, toSend.host);
+                innerSend(toSend.second.msg, toSend.second.host);
             }
             lastSend_ = Clock::now();
         }
@@ -90,7 +89,6 @@ std::optional<PerfectLink::Message>
 PerfectLink::handleMessage(uint8_t *buff, size_t size, const Host &host) {
     uint8_t type;
     buff = read_byte(buff, type);
-    std::cout << "msg: " << static_cast<int>(type) << std::endl;
 
     if (type == 0) {
         Message b;
@@ -101,13 +99,9 @@ PerfectLink::handleMessage(uint8_t *buff, size_t size, const Host &host) {
 
         deliver(d, host);
 
-        std::cout << d.host << " " << d.seq << " " << received_.size()
-                  << std::endl;
         if (received_[d.host - 1].count(d.seq) > 0) {
-            std::cout << "already processsed" << std::endl;
             return {};
         } else {
-            std::cout << "new" << std::endl;
             received_[d.host - 1].insert(d.seq);
             return b;
         }
@@ -121,7 +115,14 @@ PerfectLink::handleMessage(uint8_t *buff, size_t size, const Host &host) {
         buff = read_u32(buff, b.seq);
         buff = read_u32(buff, b.host);
 
-        // TODO mark as received
+        if (sent_.count(b.seq) > 0) {
+            auto &entry = sent_[b.seq];
+            entry.delivered = true;
+
+            if (entry.delivered) {
+                sent_.erase(b.seq);
+            }
+        }
 
         return {};
     }

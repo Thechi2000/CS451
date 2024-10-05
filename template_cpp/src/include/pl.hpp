@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <parser.hpp>
 #include <set>
@@ -35,7 +36,7 @@ class PerfectLink {
     struct ToSend {
         Message msg;
         Host host;
-        std::vector<bool> deliveredBy;
+        bool delivered;
     };
 
     void innerSend(const Message &msg, const Host &host);
@@ -55,7 +56,7 @@ class PerfectLink {
     u32 seq_;
 
     std::vector<std::set<u32>> received_;
-    std::vector<ToSend> sent_;
+    std::map<u32, ToSend> sent_;
     Clock::time_point lastSend_;
 
     UdpSocket socket;
