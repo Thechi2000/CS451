@@ -9,6 +9,7 @@
 #include "serde.hpp"
 #include <pl.hpp>
 #include <signal.h>
+#include <variant>
 
 static void stop(int) {
     // reset signal handlers to default
@@ -77,10 +78,7 @@ int main(int argc, char **argv) {
                 const auto &msg = pair.first;
                 const auto &h = pair.second;
 
-                Broadcast b = std::get<Broadcast>(msg);
-                out << "d " << h.id << " " << b.seq << std::endl;
-
-                pl.send(Deliver{b.seq, static_cast<u32>(h.id)}, h);
+                out << "d " << h.id << " " << msg.seq << std::endl;
             }
         } else {
             u32 seq = 0;
@@ -88,7 +86,7 @@ int main(int argc, char **argv) {
                 for (size_t i = 0; i < entry.count; ++i) {
                     std::string s = std::to_string(i);
                     out << "b " << i << std::endl;
-                    pl.send(Broadcast{seq++, s}, config.host(entry.id));
+                    pl.send(std::monostate(), config.host(entry.id));
                 }
             }
 
