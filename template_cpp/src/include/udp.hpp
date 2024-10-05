@@ -2,7 +2,7 @@
 #include <exception>
 #include <parser.hpp>
 
-class UdpException : std::exception {
+class UdpException : public std::exception {
   public:
     enum class Type { BIND, INVALID_IP, SEND, RECEIVE };
 

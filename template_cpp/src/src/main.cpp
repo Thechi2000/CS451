@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cstdint>
+#include <exception>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -69,29 +71,39 @@ int main(int argc, char **argv) {
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
 
-    if (config.id() == 1) {
-        while (true) {
-            char buffer[1025];
-            Host h;
-            size_t size = pl.recvFrom(buffer, 1024, h);
-            buffer[size] = 0;
+    try {
+        if (config.id() == 1) {
+            while (true) {
+                Host h;
+                PerfectLink::Message msg = pl.receive(h);
 
-            auto i = std::find_if(config.hosts().begin(), config.hosts().end(),
-                                  [&](const Host &e) {
-                                      return e.ip == h.ip && e.port == h.port;
-                                  }) -
-                     config.hosts().begin();
+                auto i =
+                    std::find_if(config.hosts().begin(), config.hosts().end(),
+                                 [&](const Host &e) {
+                                     return e.ip == h.ip && e.port == h.port;
+                                 }) -
+                    config.hosts().begin();
 
-            out << "d " << i << " " << buffer << std::endl;
-        }
-    } else {
-        for (auto &entry : config.entries()) {
-            for (size_t i = 0; i < entry.count; ++i) {
-                std::string s = std::to_string(i);
-                out << "b " << i << std::endl;
-                pl.sendTo(s.c_str(), s.length(), config.host(entry.id));
+                Broadcast b = std::get<Broadcast>(msg);
+                out << "d " << i << " " << b.content << std::endl;
+
+                pl.send(Deliver{static_cast<uint8_t>(i), b.content}, h);
+            }
+        } else {
+            for (auto &entry : config.entries()) {
+                for (size_t i = 0; i < entry.count; ++i) {
+                    std::string s = std::to_string(i);
+                    out << "b " << i << std::endl;
+                    pl.send(Broadcast{s}, config.host(entry.id));
+                }
             }
         }
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        exit(-1);
+    } catch(...) {
+        std::cerr << "Caught unknown exception" << std::endl;
+        exit(-2);
     }
 
     return 0;
