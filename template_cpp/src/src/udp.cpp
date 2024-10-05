@@ -15,19 +15,18 @@ const char *UdpException::what() const noexcept {
         return "UDP ERROR: Unable to send";
     case Type::RECEIVE:
         return "UDP ERROR: Unable to receive";
+    default:
+        return "UDP ERROR: unknown";
     }
-
-    return "UDP ERROR: unknown";
 }
 
 UdpSocket::UdpSocket(const Host &host) {
     fd = socket(AF_INET, SOCK_DGRAM, 0);
-    struct sockaddr_in server = {.sin_family = AF_INET,
-                                 .sin_port = host.port,
-                                 .sin_addr = {.s_addr = host.ip}};
+    struct sockaddr_in server = {AF_INET, host.port, {host.ip}, 0};
 
     // Bind the socket to the address
-    if (bind(fd, (struct sockaddr *)&server, sizeof(server)) < 0) {
+    if (bind(fd, reinterpret_cast<struct sockaddr *>(&server), sizeof(server)) <
+        0) {
         throw UdpException(UdpException::Type::BIND);
     }
 }
@@ -36,13 +35,12 @@ UdpSocket::~UdpSocket() { close(fd); }
 size_t UdpSocket::sendTo(const void *data, size_t size, const Host &host) {
     struct in_addr dest = {0};
 
-    struct sockaddr_in server = {.sin_family = AF_INET,
-                                 .sin_port = host.port,
-                                 .sin_addr = {.s_addr = host.ip}};
+    struct sockaddr_in server = {AF_INET, host.port, {host.ip}, 0};
     auto server_len = sizeof(server);
 
     auto sent =
-        sendto(fd, data, size, 0, (struct sockaddr *)&server, sizeof(server));
+        sendto(fd, data, size, 0, reinterpret_cast<struct sockaddr *>(&server),
+               sizeof(server));
 
     if (sent < 1) {
         throw UdpException(UdpException::Type::SEND);
@@ -55,7 +53,8 @@ size_t UdpSocket::recvFrom(void *buffer, size_t size, Host &host) {
     socklen_t server_len;
 
     auto received =
-        recvfrom(fd, buffer, size, 0, (struct sockaddr *)&server, &server_len);
+        recvfrom(fd, buffer, size, 0,
+                 reinterpret_cast<struct sockaddr *>(&server), &server_len);
 
     if (received < 1) {
         throw UdpException(UdpException::Type::RECEIVE);
