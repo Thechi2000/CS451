@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -46,10 +47,20 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
         }
 
         if (msg.has_value()) {
-            if (received_.count(msg.value()) > 0) {
+            const auto &m = msg.value();
+
+            host.id = static_cast<u32>(
+                std::find_if(config.hosts().begin(), config.hosts().end(),
+                             [&](const Host &e) {
+                                 return e.ip == host.ip && e.port == host.port;
+                             }) -
+                config.hosts().begin());
+
+            Deliver id = {getSeq(m), static_cast<u32>(host.id)};
+            if (received_.count(id) > 0) {
                 msg = {};
             } else {
-                received_.insert(msg.value());
+                received_.insert(id);
                 return {msg.value(), host};
             }
         }
@@ -58,29 +69,30 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
 
 size_t PerfectLink::serialize(const PerfectLink::Message &msg, uint8_t **buff) {
     return std::visit(
-        [=](auto &&arg) {
+        [=](auto &&arg) noexcept {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, Broadcast>) {
                 auto a = static_cast<Broadcast>(arg);
-                auto size = 5 + a.content.length();
+                auto size = 9 + a.content.length();
 
                 *buff = static_cast<uint8_t *>(malloc(size));
 
                 auto tmp = *buff;
                 tmp = write_byte(tmp, 0);
+                tmp = write_u32(tmp, a.seq);
                 tmp = write_str(tmp, a.content);
 
                 return size;
             } else if constexpr (std::is_same_v<T, Deliver>) {
                 auto a = static_cast<Deliver>(arg);
-                auto size = 6 + a.content.length();
+                size_t size = sizeof(a) + 1;
 
                 *buff = static_cast<uint8_t *>(malloc(size));
 
                 auto tmp = *buff;
                 tmp = write_byte(tmp, 0);
-                tmp = write_byte(tmp, a.host);
-                tmp = write_str(tmp, a.content);
+                tmp = write_u32(tmp, a.seq);
+                tmp = write_u32(tmp, a.host);
 
                 return size;
             }
@@ -95,27 +107,25 @@ std::optional<PerfectLink::Message> PerfectLink::deserialize(uint8_t *buff,
 
     if (type == 0) {
         uint32_t string_size = 0;
-        read_u32(buff, string_size);
+        read_u32(buff + 4, string_size);
 
-        if (size != string_size + 5) {
+        if (size != string_size + 9) {
             return {};
         }
 
         Broadcast b;
+        buff = read_u32(buff, b.seq);
         buff = read_str(buff, b.content);
 
         return b;
     } else {
-        uint32_t string_size = 0;
-        read_u32(buff + 1, string_size);
-
-        if (size != string_size + 6) {
+        if (size != sizeof(Deliver) + 1) {
             return {};
         }
 
         Deliver b;
-        buff = read_byte(buff, b.host);
-        buff = read_str(buff, b.content);
+        buff = read_u32(buff, b.seq);
+        buff = read_u32(buff, b.host);
 
         return b;
     }

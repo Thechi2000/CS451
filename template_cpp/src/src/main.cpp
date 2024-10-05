@@ -1,5 +1,3 @@
-#include <algorithm>
-#include <cstdint>
 #include <exception>
 #include <fstream>
 #include <ios>
@@ -8,6 +6,7 @@
 
 #include "hello.h"
 #include "parser.hpp"
+#include "serde.hpp"
 #include <pl.hpp>
 #include <signal.h>
 
@@ -78,24 +77,18 @@ int main(int argc, char **argv) {
                 const auto &msg = pair.first;
                 const auto &h = pair.second;
 
-                auto i =
-                    std::find_if(config.hosts().begin(), config.hosts().end(),
-                                 [&](const Host &e) {
-                                     return e.ip == h.ip && e.port == h.port;
-                                 }) -
-                    config.hosts().begin();
-
                 Broadcast b = std::get<Broadcast>(msg);
-                out << "d " << i << " " << b.content << std::endl;
+                out << "d " << h.id << " " << b.seq << std::endl;
 
-                pl.send(Deliver{static_cast<uint8_t>(i), b.content}, h);
+                pl.send(Deliver{b.seq, static_cast<u32>(h.id)}, h);
             }
         } else {
+            u32 seq = 0;
             for (auto &entry : config.entries()) {
                 for (size_t i = 0; i < entry.count; ++i) {
                     std::string s = std::to_string(i);
                     out << "b " << i << std::endl;
-                    pl.send(Broadcast{s}, config.host(entry.id));
+                    pl.send(Broadcast{seq++, s}, config.host(entry.id));
                 }
             }
 
