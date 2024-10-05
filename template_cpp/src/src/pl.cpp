@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <netinet/in.h>
 #include <optional>
 #include <pl.hpp>
@@ -16,8 +15,6 @@ PerfectLink::~PerfectLink() {}
 void PerfectLink::send(const Message &msg, const Host &host) {
     innerSend(msg, host);
     sent_.push_back({msg, Host(host)});
-
-    std::cout << host.port << " " << Host(host).port << std::endl;
 }
 void PerfectLink::innerSend(const Message &m, const Host &host) {
     uint8_t *buff;

@@ -23,7 +23,6 @@ bool Parser::parseInternal() {
     }
 
     parseHosts();
-    std::cerr << "###" << id_ << " " << withConfig_ << std::endl;
 
     if (withConfig_) {
         std::cerr << "Parsing config" << std::endl;

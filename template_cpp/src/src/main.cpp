@@ -88,7 +88,6 @@ int main(int argc, char **argv) {
                 Broadcast b = std::get<Broadcast>(msg);
                 out << "d " << i << " " << b.content << std::endl;
 
-                std::cout << h.portReadable() << std::endl;
                 pl.send(Deliver{static_cast<uint8_t>(i), b.content}, h);
             }
         } else {
