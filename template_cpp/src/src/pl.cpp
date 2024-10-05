@@ -14,7 +14,7 @@ PerfectLink::~PerfectLink() {}
 
 void PerfectLink::send(const Message &msg, const Host &host) {
     innerSend(msg, host);
-    sent_.push_back({msg, Host(host)});
+    sent_.push_back({msg, Host(host), std::vector<bool>()});
 }
 void PerfectLink::innerSend(const Message &m, const Host &host) {
     uint8_t *buff;
@@ -29,10 +29,10 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
 
     Host host;
     std::optional<Message> msg = std::nullopt;
-    while (!msg.has_value()) {
+    while (true) {
         if (Clock::now() - lastSend_ > TIMEOUT) {
-            for (auto pair : sent_) {
-                innerSend(pair.first, pair.second);
+            for (const auto &toSend : sent_) {
+                innerSend(toSend.msg, toSend.host);
             }
             lastSend_ = Clock::now();
         }
@@ -44,9 +44,16 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
             buffer = reinterpret_cast<uint8_t *>(
                 realloc(buffer, buffer_size += 1024));
         }
-    }
 
-    return {msg.value(), host};
+        if (msg.has_value()) {
+            if (received_.count(msg.value()) > 0) {
+                msg = {};
+            } else {
+                received_.insert(msg.value());
+                return {msg.value(), host};
+            }
+        }
+    }
 }
 
 size_t PerfectLink::serialize(const PerfectLink::Message &msg, uint8_t **buff) {

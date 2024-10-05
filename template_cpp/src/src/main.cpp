@@ -98,6 +98,10 @@ int main(int argc, char **argv) {
                     pl.send(Broadcast{s}, config.host(entry.id));
                 }
             }
+
+            while (true) {
+                pl.receive();
+            }
         }
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
