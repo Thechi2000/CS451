@@ -42,7 +42,7 @@ struct Host {
     }
 
     in_addr_t ipLookup(const char *host) {
-        struct addrinfo hints, *res;
+        struct addrinfo hints, *res, *to_free;
         char addrstr[128];
         void *ptr;
 
@@ -56,6 +56,7 @@ struct Host {
                 "Could not resolve host `" + std::string(host) +
                 "` to IP: " + std::string(std::strerror(errno)));
         }
+        to_free = res;
 
         while (res) {
             inet_ntop(res->ai_family, res->ai_addr->sa_data, addrstr, 128);
@@ -65,6 +66,7 @@ struct Host {
                 ptr = &(reinterpret_cast<struct sockaddr_in *>(res->ai_addr))
                            ->sin_addr;
                 inet_ntop(res->ai_family, ptr, addrstr, 128);
+                freeaddrinfo(to_free);
                 return inet_addr(addrstr);
                 break;
             // case AF_INET6:
