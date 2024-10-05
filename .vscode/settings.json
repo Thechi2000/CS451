@@ -1,3 +1,4 @@
 {
-  "clangd.fallbackFlags": ["-I${workspaceFolder}/template_cpp/src/include"]
+"clangd.enableCodeCompletion": true,
+"clangd.arguments": ["--compile-commands-dir=${workspaceFolder}/template_cpp"]
 }
