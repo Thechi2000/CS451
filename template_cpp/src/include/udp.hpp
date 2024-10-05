@@ -4,7 +4,7 @@
 
 class UdpException : public std::exception {
   public:
-    enum class Type { BIND, INVALID_IP, SEND, RECEIVE };
+    enum class Type { OPT, BIND, INVALID_IP, SEND, RECEIVE };
 
     UdpException(Type t);
 
