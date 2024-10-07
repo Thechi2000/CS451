@@ -10,7 +10,6 @@
 #include <set>
 #include <udp.hpp>
 #include <utility>
-#include <variant>
 #include <vector>
 
 struct Deliver {
@@ -20,7 +19,11 @@ struct Deliver {
 
 class PerfectLink {
   public:
-    using Payload = std::monostate;
+    struct Payload {
+        u32 length;
+        void *bytes;
+    };
+
     struct Message {
         u32 seq;
         Payload content;

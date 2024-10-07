@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <linux/falloc.h>
 #include <netinet/in.h>
 #include <optional>
 #include <pl.hpp>
@@ -74,13 +75,17 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
 }
 
 size_t PerfectLink::serialize(const PerfectLink::Message &msg, uint8_t **buff) {
-    size_t size = 5;
+    size_t size = 9 + msg.content.length;
     *buff = reinterpret_cast<uint8_t *>(malloc(size));
 
     auto tmp = *buff;
     tmp = write_byte(tmp, 0);
     tmp = write_u32(tmp, msg.seq);
-    // TODO serialize payload
+    tmp = write_u32(tmp, msg.content.length);
+
+    if (msg.content.length) {
+        memcpy(tmp, msg.content.bytes, msg.content.length);
+    }
 
     return size;
 }
@@ -93,7 +98,12 @@ PerfectLink::handleMessage(uint8_t *buff, size_t size, const Host &host) {
     if (type == 0) {
         Message b;
         buff = read_u32(buff, b.seq);
-        // TODO deserialize payload
+        buff = read_u32(buff, b.content.length);
+
+        b.content.bytes = malloc(b.content.length);
+        if (b.content.length) {
+            memcpy(b.content.bytes, buff, b.content.length);
+        }
 
         Deliver d = Deliver{b.seq, static_cast<u32>(host.id)};
 
@@ -146,7 +156,13 @@ bool PerfectLink::isCompleteMessage(uint8_t *buff, size_t size) {
     }
 
     if (buff[0] == 0) {
-        return size == 5;
+        if (size >= 9) {
+            u32 length;
+            read_u32(buff + 5, length);
+            return size == 9 + length;
+        } else {
+            return false;
+        }
     } else {
         return size == sizeof(Deliver) + 1;
     }

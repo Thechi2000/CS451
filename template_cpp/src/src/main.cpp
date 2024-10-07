@@ -9,7 +9,6 @@
 #include "serde.hpp"
 #include <pl.hpp>
 #include <signal.h>
-#include <variant>
 
 static void stop(int) {
     // reset signal handlers to default
@@ -86,7 +85,7 @@ int main(int argc, char **argv) {
                 for (size_t i = 0; i < entry.count; ++i) {
                     std::string s = std::to_string(i);
                     out << "b " << i << std::endl;
-                    pl.send(std::monostate(), config.host(entry.id));
+                    pl.send({0, NULL}, config.host(entry.id));
                 }
             }
 
