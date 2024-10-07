@@ -1,0 +1,15 @@
+#!/bin/sh
+
+DIR=$(dirname $0)
+cd $DIR
+
+id=$1
+config=
+
+mkdir -p ../output
+
+if [ $id != 1 ]; then
+    config=../example/configs/perfect-links.config
+fi
+
+bin/da_proc --id $id --hosts ../example/hosts --output ../output/$id $config
