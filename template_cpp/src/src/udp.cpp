@@ -27,7 +27,7 @@ const char *UdpException::what() const noexcept {
 
 UdpSocket::UdpSocket(const Host &host) {
     fd = socket(AF_INET, SOCK_DGRAM, 0);
-    struct sockaddr_in server = {AF_INET, host.port, {host.ip}, 0};
+    struct sockaddr_in server = {AF_INET, host.port, {host.ip}, {0}};
 
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) {
@@ -55,7 +55,7 @@ UdpSocket::~UdpSocket() { close(fd); }
 size_t UdpSocket::sendTo(const void *data, size_t size, const Host &host) {
     struct in_addr dest = {0};
 
-    struct sockaddr_in server = {AF_INET, host.port, {host.ip}, 0};
+    struct sockaddr_in server = {AF_INET, host.port, {host.ip}, {0}};
     auto server_len = sizeof(server);
 
     auto sent =
@@ -66,7 +66,7 @@ size_t UdpSocket::sendTo(const void *data, size_t size, const Host &host) {
         throw UdpException(UdpException::Type::SEND);
     }
 
-    return sent;
+    return static_cast<size_t>(sent);
 }
 size_t UdpSocket::recvFrom(void *buffer, size_t size, Host &host) {
     struct sockaddr_in server;
@@ -87,5 +87,5 @@ size_t UdpSocket::recvFrom(void *buffer, size_t size, Host &host) {
     host.ip = server.sin_addr.s_addr;
     host.port = server.sin_port;
 
-    return received;
+    return static_cast<size_t>(received);
 }
