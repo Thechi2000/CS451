@@ -104,7 +104,7 @@ void Parser::parseConfig() {
             break;
         }
 
-        size_t delim = line.find_first_of(' ');
+        long delim = static_cast<long>(line.find_first_of(' '));
         auto entry = ConfigEntry{
             static_cast<size_t>(
                 std::stoi(std::string(line.begin() + delim + 1, line.end()))),
