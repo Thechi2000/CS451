@@ -4,7 +4,6 @@
 #include <iostream>
 #include <string>
 
-#include "hello.h"
 #include "parser.hpp"
 #include "serde.hpp"
 #include <pl.hpp>
@@ -35,7 +34,6 @@ int main(int argc, char **argv) {
 
     config.parse(argc, argv);
 
-    hello();
     std::cout << std::endl;
 
     std::cout << "My PID: " << getpid() << "\n";
