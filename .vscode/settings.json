@@ -1,4 +1,4 @@
 {
 "clangd.enableCodeCompletion": true,
-"clangd.arguments": ["--compile-commands-dir=${workspaceFolder}/template_cpp"]
+"clangd.arguments": ["--compile-commands-dir=${workspaceFolder}/template_cpp/target"]
 }
