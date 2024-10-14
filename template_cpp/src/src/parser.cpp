@@ -4,6 +4,8 @@
 #include <parser.hpp>
 #include <sstream>
 
+Parser config = Parser();
+
 bool Parser::parseInternal() {
     if (!parseID()) {
         return false;
@@ -25,7 +27,6 @@ bool Parser::parseInternal() {
     parseHosts();
 
     if (withConfig_) {
-        std::cerr << "Parsing config" << std::endl;
         parseConfig();
     }
 
@@ -93,7 +94,6 @@ void Parser::parseHosts() {
 }
 
 void Parser::parseConfig() {
-    std::cerr << configPath_ << std::endl;
     std::fstream input(configPath_);
 
     while (true) {

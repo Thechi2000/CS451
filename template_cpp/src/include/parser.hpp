@@ -53,8 +53,8 @@ class Parser {
     const ConfigEntry &entry(size_t i) const { return entries_[i]; }
 
     const std::vector<Host> &hosts() { return hosts_; }
-    const Host &host(size_t i) { return hosts_[i]; }
-    const Host &host() { return hosts_[id_]; }
+    const Host &host(size_t i) { return hosts_[i - 1]; }
+    const Host &host() { return hosts_[id_ - 1]; }
 
   private:
     bool parseInternal();
@@ -89,4 +89,4 @@ class Parser {
     std::vector<ConfigEntry> entries_;
 };
 
-static Parser config;
+extern Parser config;
