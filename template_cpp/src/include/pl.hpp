@@ -3,7 +3,6 @@
 #include "serde.hpp"
 #include <chrono>
 #include <cstddef>
-#include <cstdint>
 #include <map>
 #include <optional>
 #include <parser.hpp>
