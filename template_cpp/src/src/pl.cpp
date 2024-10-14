@@ -33,7 +33,7 @@ void PerfectLink::innerSend(const Message &msg, const Host &host) {
 }
 
 std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
-    size_t buffer_size = 1024, size = 0;
+    /* size_t buffer_size = 1024, size = 0;
     uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(buffer_size));
 
     Host host;
@@ -70,6 +70,41 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
         if (size == buffer_size) {
             buffer = reinterpret_cast<uint8_t *>(
                 realloc(buffer, buffer_size += 1024));
+        }
+    } */
+
+    const size_t BUFFER_SIZE = 1024;
+    uint8_t buffer[BUFFER_SIZE] = {0};
+
+    Host host;
+    std::optional<Message> msg = std::nullopt;
+    while (true) {
+        if (Clock::now() - lastSend_ > TIMEOUT) {
+            for (const auto &toSend : sent_) {
+                innerSend(toSend.second.msg, toSend.second.host);
+            }
+            lastSend_ = Clock::now();
+        }
+
+        size_t size = socket.recvFrom(buffer, BUFFER_SIZE, host);
+
+        if (isCompleteMessage(buffer, size)) {
+            host.id =
+                static_cast<u32>(std::find_if(config.hosts().begin(),
+                                              config.hosts().end(),
+                                              [&](const Host &e) {
+                                                  return e.ip == host.ip &&
+                                                         e.port == host.port;
+                                              }) -
+                                 config.hosts().begin()) +
+                1;
+
+            auto payload = handleMessage(buffer, size, host);
+            if (payload.has_value()) {
+                return {payload.value(), host};
+            } else {
+                size = 0;
+            }
         }
     }
 }
