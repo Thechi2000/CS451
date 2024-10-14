@@ -105,9 +105,9 @@ PerfectLink::handleMessage(uint8_t *buff, size_t size, const Host &host) {
             memcpy(b.content.bytes, buff, b.content.length);
         }
 
-        Deliver d = Deliver{b.seq, static_cast<u32>(host.id)};
+        Ack d = Ack{b.seq, static_cast<u32>(host.id)};
 
-        deliver(d, host);
+        ack(d, host);
 
         if (received_[d.host - 1].count(d.seq) > 0) {
             return {};
@@ -117,19 +117,19 @@ PerfectLink::handleMessage(uint8_t *buff, size_t size, const Host &host) {
         }
 
     } else {
-        if (size != sizeof(Deliver) + 1) {
+        if (size != sizeof(Ack) + 1) {
             return {};
         }
 
-        Deliver b;
+        Ack b;
         buff = read_u32(buff, b.seq);
         buff = read_u32(buff, b.host);
 
         if (sent_.count(b.seq) > 0) {
             auto &entry = sent_[b.seq];
-            entry.delivered = true;
+            entry.acked = true;
 
-            if (entry.delivered) {
+            if (entry.acked) {
                 sent_.erase(b.seq);
             }
         }
@@ -138,14 +138,14 @@ PerfectLink::handleMessage(uint8_t *buff, size_t size, const Host &host) {
     }
 }
 
-void PerfectLink::deliver(const Deliver &deliver, const Host &host) {
-    size_t size = sizeof(Deliver) + 1;
+void PerfectLink::ack(const Ack &ack, const Host &host) {
+    size_t size = sizeof(Ack) + 1;
     uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(size));
 
     auto tmp = buffer;
     tmp = write_byte(tmp, 1);
-    tmp = write_u32(tmp, deliver.seq);
-    tmp = write_u32(tmp, deliver.host);
+    tmp = write_u32(tmp, ack.seq);
+    tmp = write_u32(tmp, ack.host);
 
     socket.sendTo(buffer, size, host);
 }
@@ -164,6 +164,6 @@ bool PerfectLink::isCompleteMessage(uint8_t *buff, size_t size) {
             return false;
         }
     } else {
-        return size == sizeof(Deliver) + 1;
+        return size == sizeof(Ack) + 1;
     }
 }

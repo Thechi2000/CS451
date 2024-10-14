@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-struct Deliver {
+struct Ack {
     u32 seq;
     u32 host;
 };
@@ -39,7 +39,7 @@ class PerfectLink {
     struct ToSend {
         Message msg;
         Host host;
-        bool delivered;
+        bool acked;
     };
 
     void innerSend(const Message &msg, const Host &host);
@@ -48,13 +48,13 @@ class PerfectLink {
     const Clock::duration TIMEOUT = Clock::duration(1000000000); // 100ms
 
     size_t serialize(const Message &msg, uint8_t **buff);
-    size_t serialize(const Deliver &msg, uint8_t **buff);
+    size_t serialize(const Ack &msg, uint8_t **buff);
 
     bool isCompleteMessage(uint8_t *buff, size_t size);
     std::optional<Message> handleMessage(uint8_t *buff, size_t size,
                                          const Host &host);
 
-    void deliver(const Deliver &deliver, const Host &host);
+    void ack(const Ack &deliver, const Host &host);
 
     u32 seq_;
 
