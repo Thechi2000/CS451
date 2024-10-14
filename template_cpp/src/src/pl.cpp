@@ -26,7 +26,7 @@ void PerfectLink::send(const Payload &p, const Host &host) {
     sent_.insert({seq, {{seq, p}, Host(host), false}});
 }
 void PerfectLink::innerSend(const Message &msg, const Host &host) {
-    uint8_t *buff;
+    u8 *buff;
     size_t size = serialize(msg, &buff);
     socket.sendTo(buff, size, host);
     free(buff);
@@ -34,7 +34,7 @@ void PerfectLink::innerSend(const Message &msg, const Host &host) {
 
 std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
     /* size_t buffer_size = 1024, size = 0;
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(buffer_size));
+    u8 *buffer = reinterpret_cast<uint8_t *>(malloc(buffer_size));
 
     Host host;
     std::optional<Message> msg = std::nullopt;
@@ -68,13 +68,13 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
         }
 
         if (size == buffer_size) {
-            buffer = reinterpret_cast<uint8_t *>(
+            buffer = reinterpret_cast<u8 *>(
                 realloc(buffer, buffer_size += 1024));
         }
     } */
 
     const size_t BUFFER_SIZE = 1024;
-    uint8_t buffer[BUFFER_SIZE] = {0};
+    u8 buffer[BUFFER_SIZE] = {0};
 
     Host host;
     std::optional<Message> msg = std::nullopt;
@@ -109,9 +109,9 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
     }
 }
 
-size_t PerfectLink::serialize(const PerfectLink::Message &msg, uint8_t **buff) {
+size_t PerfectLink::serialize(const PerfectLink::Message &msg, u8 **buff) {
     size_t size = 9 + msg.content.length;
-    *buff = reinterpret_cast<uint8_t *>(malloc(size));
+    *buff = reinterpret_cast<u8 *>(malloc(size));
 
     auto tmp = *buff;
     tmp = write_byte(tmp, 0);
@@ -126,8 +126,8 @@ size_t PerfectLink::serialize(const PerfectLink::Message &msg, uint8_t **buff) {
 }
 
 std::optional<PerfectLink::Message>
-PerfectLink::handleMessage(uint8_t *buff, size_t size, const Host &host) {
-    uint8_t type;
+PerfectLink::handleMessage(u8 *buff, size_t size, const Host &host) {
+    u8 type;
     buff = read_byte(buff, type);
 
     if (type == 0) {
@@ -175,7 +175,7 @@ PerfectLink::handleMessage(uint8_t *buff, size_t size, const Host &host) {
 
 void PerfectLink::ack(const Ack &ack, const Host &host) {
     size_t size = sizeof(Ack) + 1;
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(size));
+    u8 *buffer = reinterpret_cast<uint8_t *>(malloc(size));
 
     auto tmp = buffer;
     tmp = write_byte(tmp, 1);
@@ -185,7 +185,7 @@ void PerfectLink::ack(const Ack &ack, const Host &host) {
     socket.sendTo(buffer, size, host);
 }
 
-bool PerfectLink::isCompleteMessage(uint8_t *buff, size_t size) {
+bool PerfectLink::isCompleteMessage(u8 *buff, size_t size) {
     if (size == 0) {
         return false;
     }

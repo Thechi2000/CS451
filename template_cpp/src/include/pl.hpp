@@ -47,11 +47,11 @@ class PerfectLink {
     using Clock = std::chrono::system_clock;
     const Clock::duration TIMEOUT = Clock::duration(1000000000); // 100ms
 
-    size_t serialize(const Message &msg, uint8_t **buff);
-    size_t serialize(const Ack &msg, uint8_t **buff);
+    size_t serialize(const Message &msg, u8 **buff);
+    size_t serialize(const Ack &msg, u8 **buff);
 
-    bool isCompleteMessage(uint8_t *buff, size_t size);
-    std::optional<Message> handleMessage(uint8_t *buff, size_t size,
+    bool isCompleteMessage(u8 *buff, size_t size);
+    std::optional<Message> handleMessage(u8 *buff, size_t size,
                                          const Host &host);
 
     void ack(const Ack &deliver, const Host &host);
