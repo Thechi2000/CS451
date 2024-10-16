@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
                      std::ios_base::out | std::ios_base::trunc);
 
     try {
-        if (config.id() == 1) {
+        if (config.id() == config.receiverId()) {
             while (true) {
                 auto pair = pl.receive();
                 const auto &msg = pair.first;

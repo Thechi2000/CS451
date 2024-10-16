@@ -10,7 +10,6 @@ bool Parser::parseInternal() {
     if (!parseID()) {
         return false;
     }
-    withConfig_ = id_ != 1;
 
     if (!parseHostPath()) {
         return false;
@@ -26,9 +25,7 @@ bool Parser::parseInternal() {
 
     parseHosts();
 
-    if (withConfig_) {
-        parseConfig();
-    }
+    parseConfig();
 
     return true;
 }
@@ -111,6 +108,7 @@ void Parser::parseConfig() {
             static_cast<size_t>(
                 std::stoi(std::string(line.begin(), line.begin() + delim))),
         };
+        receiverId_ = entry.id;
         entries_.push_back(entry);
     }
 }
@@ -120,11 +118,7 @@ void Parser::help(const int, char const *const *argv) {
     std::cerr << "Usage: " << argv[0]
               << " --id ID --hosts HOSTS --output OUTPUT";
 
-    if (!withConfig_) {
-        std::cerr << "\n";
-    } else {
-        std::cerr << " CONFIG\n";
-    }
+    std::cerr << " CONFIG\n";
 
     exit(EXIT_FAILURE);
 }
@@ -178,10 +172,6 @@ bool Parser::parseOutputPath() {
 }
 
 bool Parser::parseConfigPath() {
-    if (!withConfig_) {
-        return true;
-    }
-
     if (argc_ < 8) {
         return false;
     }

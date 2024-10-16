@@ -34,20 +34,14 @@ class Parser {
         }
     }
 
+    unsigned long receiverId() const { return receiverId_; }
     unsigned long id() const { return id_; }
 
     const char *hostsPath() const { return hostsPath_.c_str(); }
 
     const char *outputPath() const { return outputPath_.c_str(); }
 
-    const char *configPath() const {
-        if (!withConfig_) {
-            throw std::runtime_error(
-                "Parser is configure to ignore the config path");
-        }
-
-        return configPath_.c_str();
-    }
+    const char *configPath() const { return configPath_.c_str(); }
 
     const std::vector<ConfigEntry> &entries() const { return entries_; }
     const ConfigEntry &entry(size_t i) const { return entries_[i]; }
@@ -78,8 +72,8 @@ class Parser {
   private:
     int argc_;
     char **argv_;
-    bool withConfig_;
 
+    unsigned long receiverId_;
     unsigned long id_;
     std::string hostsPath_;
     std::string outputPath_;
