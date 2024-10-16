@@ -49,7 +49,6 @@ class PerfectLink {
     size_t serialize(const Message &msg, u8 **buff);
     size_t serialize(const Ack &msg, u8 **buff);
 
-    bool isCompleteMessage(u8 *buff, size_t size);
     std::optional<Message> handleMessage(u8 *buff, size_t size,
                                          const Host &host);
 

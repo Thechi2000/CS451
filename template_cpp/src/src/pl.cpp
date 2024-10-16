@@ -73,8 +73,7 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
         }
     } */
 
-    const size_t BUFFER_SIZE = 1024;
-    u8 buffer[BUFFER_SIZE] = {0};
+    u8 buffer[UDP_PACKET_MAX_SIZE] = {0};
 
     Host host;
     std::optional<Message> msg = std::nullopt;
@@ -86,9 +85,9 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
             lastSend_ = Clock::now();
         }
 
-        size_t size = socket.recvFrom(buffer, BUFFER_SIZE, host);
+        size_t size = socket.recvFrom(buffer, UDP_PACKET_MAX_SIZE, host);
 
-        if (isCompleteMessage(buffer, size)) {
+        if (size > 0) {
             host.id =
                 static_cast<u32>(std::find_if(config.hosts().begin(),
                                               config.hosts().end(),
@@ -183,22 +182,4 @@ void PerfectLink::ack(const Ack &ack, const Host &host) {
     tmp = write_u32(tmp, ack.host);
 
     socket.sendTo(buffer, size, host);
-}
-
-bool PerfectLink::isCompleteMessage(u8 *buff, size_t size) {
-    if (size == 0) {
-        return false;
-    }
-
-    if (buff[0] == 0) {
-        if (size >= 9) {
-            u32 length;
-            read_u32(buff + 5, length);
-            return size == 9 + length;
-        } else {
-            return false;
-        }
-    } else {
-        return size == sizeof(Ack) + 1;
-    }
 }

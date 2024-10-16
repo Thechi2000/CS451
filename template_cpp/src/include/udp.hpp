@@ -2,6 +2,8 @@
 #include <exception>
 #include <parser.hpp>
 
+#define UDP_PACKET_MAX_SIZE 65507
+
 class UdpException : public std::exception {
   public:
     enum class Type { OPT, BIND, INVALID_IP, SEND, RECEIVE };
