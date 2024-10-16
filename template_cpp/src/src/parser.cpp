@@ -64,7 +64,10 @@ void Parser::parseHosts() {
             throw std::invalid_argument(os.str());
         }
 
-        hosts.push_back(Host(id, ip, port));
+        if (id > hosts.size()) {
+            hosts.resize(id);
+        }
+        hosts[id - 1] = Host(id, ip, port);
     }
 
     if (hosts.size() < 2UL) {
