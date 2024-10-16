@@ -41,7 +41,13 @@ class PerfectLink {
         bool acked;
     };
 
-    void innerSend(const Message &msg, const Host &host);
+    struct DeliveredEntry {
+        u32 lowerBound;
+        std::set<u32> delivered;
+    };
+
+    void
+    innerSend(const Message &msg, const Host &host);
 
     using Clock = std::chrono::system_clock;
     const Clock::duration TIMEOUT = Clock::duration(1000000000); // 100ms
@@ -56,7 +62,7 @@ class PerfectLink {
 
     u32 seq_;
 
-    std::vector<std::set<u32>> received_;
+    std::vector<DeliveredEntry> received_;
     std::map<u32, ToSend> sent_;
     Clock::time_point lastSend_;
 

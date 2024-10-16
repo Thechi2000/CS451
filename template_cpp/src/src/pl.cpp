@@ -12,8 +12,9 @@
 #include <set>
 
 PerfectLink::PerfectLink(const Host &host)
-    : seq_(1), received_(config.hosts().size(), std::set<u32>()), sent_(),
-      lastSend_(Clock::now()), socket(host) {
+    : seq_(1),
+      received_(config.hosts().size(), DeliveredEntry{1, std::set<u32>()}),
+      sent_(), lastSend_(Clock::now()), socket(host) {
     for (size_t i = 0; i < config.hosts().size() + 1; ++i) {
         received_.emplace_back();
     }
@@ -143,12 +144,35 @@ PerfectLink::handleMessage(u8 *buff, size_t size, const Host &host) {
 
         ack(d, host);
 
-        if (received_[d.host - 1].count(d.seq) > 0) {
+        auto &deliveredEntry = received_[d.host - 1];
+
+        if (d.seq < deliveredEntry.lowerBound ||
+            deliveredEntry.delivered.count(d.seq) > 0) {
             return {};
-        } else {
-            received_[d.host - 1].insert(d.seq);
-            return b;
         }
+
+        if (d.seq == deliveredEntry.lowerBound) {
+            deliveredEntry.lowerBound++;
+
+            auto begin = deliveredEntry.delivered.begin();
+            auto it = begin;
+
+            if (*it == deliveredEntry.lowerBound) {
+                deliveredEntry.lowerBound++;
+
+                it++;
+                while (*it == deliveredEntry.lowerBound) {
+                    deliveredEntry.lowerBound++;
+                    it++;
+                }
+
+                deliveredEntry.delivered.erase(begin, it);
+            }
+        } else {
+            deliveredEntry.delivered.insert(d.seq);
+        }
+
+        return b;
 
     } else {
         if (size != sizeof(Ack) + 1) {
