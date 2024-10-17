@@ -48,7 +48,7 @@ void Proxy::wait() {
 
         size_t size = socket.recvFrom(buffer, UDP_PACKET_MAX_SIZE, host);
 
-        if (isCompleteMessage(buffer, size)) {
+        if (size > 0) {
             host.id =
                 static_cast<u32>(std::find_if(config.hosts().begin(),
                                               config.hosts().end(),
