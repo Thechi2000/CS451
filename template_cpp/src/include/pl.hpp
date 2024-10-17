@@ -50,7 +50,7 @@ class PerfectLink {
     innerSend(const Message &msg, const Host &host);
 
     using Clock = std::chrono::system_clock;
-    const Clock::duration TIMEOUT = Clock::duration(1000000000); // 100ms
+    const Clock::duration TIMEOUT = Clock::duration(100000000); // 100ms
 
     size_t serialize(const Message &msg, u8 **buff);
     size_t serialize(const Ack &msg, u8 **buff);
@@ -58,7 +58,7 @@ class PerfectLink {
     std::optional<Message> handleMessage(u8 *buff, size_t size,
                                          const Host &host);
 
-    void ack(const Ack &deliver, const Host &host);
+    void ack(const Ack &ack, const Host &host);
 
     u32 seq_;
 
