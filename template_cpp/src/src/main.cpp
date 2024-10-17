@@ -2,11 +2,11 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
-#include <string>
 
 #include "parser.hpp"
 #include <proxy.hpp>
 #include <signal.h>
+#include <vector>
 
 static void stop(int) {
     // reset signal handlers to default
@@ -74,11 +74,8 @@ int main(int argc, char **argv) {
             });
         } else {
             for (auto &entry : config.entries()) {
-                for (size_t i = 0; i < entry.count; ++i) {
-                    std::string s = std::to_string(i);
-                    out << "b " << i << std::endl;
-                    proxy.send({0, NULL}, config.host(entry.id));
-                }
+                std::vector<Proxy::Payload> messages(entry.count, {0, NULL});
+                proxy.send(messages, config.host(config.receiverId()));
             }
         }
 

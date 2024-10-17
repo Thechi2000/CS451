@@ -23,14 +23,37 @@ Proxy::~Proxy() {}
 
 void Proxy::send(const Payload &p, const Host &host) {
     u32 seq = seq_++;
-    innerSend({seq, p}, host);
+    innerSend(Message{seq, p}, host);
     sent_.insert({seq, {{seq, p}, Host(host), false}});
 }
+void Proxy::send(const std::vector<Payload> &payloads, const Host &host) {
+    u8 buffer[UDP_PACKET_MAX_SIZE];
+
+    for (auto it = payloads.begin(); it != payloads.end(); it++) {
+        size_t size = 0;
+        for (int i = 0; i < 8; ++i) {
+            size_t messageSize = 9 + it->length;
+
+            if (size + messageSize > UDP_PACKET_MAX_SIZE) {
+                break;
+            }
+
+            Message m = {seq_++, *it};
+            serialize(m, buffer + size);
+            sent_.insert({m.seq, {m, host, false}});
+            size += messageSize;
+
+            it++;
+        }
+
+        socket.sendTo(buffer, size, host);
+    }
+}
+
 void Proxy::innerSend(const Message &msg, const Host &host) {
-    u8 *buff;
-    size_t size = serialize(msg, &buff);
+    u8 buff[UDP_PACKET_MAX_SIZE];
+    size_t size = serialize(msg, buff);
     socket.sendTo(buff, size, host);
-    free(buff);
 }
 
 void Proxy::wait() {
@@ -66,17 +89,15 @@ void Proxy::wait() {
     }
 }
 
-size_t Proxy::serialize(const Proxy::Message &msg, u8 **buff) {
+size_t Proxy::serialize(const Proxy::Message &msg, u8 *buff) {
     size_t size = 9 + msg.content.length;
-    *buff = reinterpret_cast<u8 *>(malloc(size));
 
-    auto tmp = *buff;
-    tmp = write_byte(tmp, 0);
-    tmp = write_u32(tmp, msg.seq);
-    tmp = write_u32(tmp, msg.content.length);
+    buff = write_byte(buff, 0);
+    buff = write_u32(buff, msg.seq);
+    buff = write_u32(buff, msg.content.length);
 
     if (msg.content.length) {
-        memcpy(tmp, msg.content.bytes, msg.content.length);
+        memcpy(buff, msg.content.bytes, msg.content.length);
     }
 
     return size;
