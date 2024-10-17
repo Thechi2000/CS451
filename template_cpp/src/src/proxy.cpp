@@ -28,9 +28,9 @@ void Proxy::send(const Payload &p, const Host &host) {
 void Proxy::send(const std::vector<Payload> &payloads, const Host &host) {
     u8 buffer[UDP_PACKET_MAX_SIZE];
 
-    for (auto it = payloads.begin(); it != payloads.end(); it++) {
+    for (auto it = payloads.begin(); it != payloads.end();) {
         size_t size = 0;
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < 8 && it != payloads.end(); ++i) {
             size_t messageSize = 9 + it->length;
 
             if (size + messageSize > UDP_PACKET_MAX_SIZE) {
