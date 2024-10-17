@@ -3,12 +3,12 @@
 #include "serde.hpp"
 #include <chrono>
 #include <cstddef>
+#include <functional>
 #include <map>
 #include <optional>
 #include <parser.hpp>
 #include <set>
 #include <udp.hpp>
-#include <utility>
 #include <vector>
 
 struct Ack {
@@ -32,7 +32,11 @@ class Proxy {
     ~Proxy();
 
     void send(const Payload &p, const Host &host);
-    std::pair<Message, Host> receive();
+
+    using Callback = std::function<void(Message &message, const Host& host)>;
+    void setCallback(Callback cb) { callback_ = cb; }
+
+    void wait();
 
   private:
     struct ToSend {
@@ -65,6 +69,8 @@ class Proxy {
     std::vector<DeliveredEntry> received_;
     std::map<u32, ToSend> sent_;
     Clock::time_point lastSend_;
+
+    Callback callback_;
 
     UdpSocket socket;
 };

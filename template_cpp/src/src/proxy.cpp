@@ -33,47 +33,7 @@ void Proxy::innerSend(const Message &msg, const Host &host) {
     free(buff);
 }
 
-std::pair<Proxy::Message, Host> Proxy::receive() {
-    /* size_t buffer_size = 1024, size = 0;
-    u8 *buffer = reinterpret_cast<uint8_t *>(malloc(buffer_size));
-
-    Host host;
-    std::optional<Message> msg = std::nullopt;
-    while (true) {
-        if (Clock::now() - lastSend_ > TIMEOUT) {
-            for (const auto &toSend : sent_) {
-                innerSend(toSend.second.msg, toSend.second.host);
-            }
-            lastSend_ = Clock::now();
-        }
-
-        size += socket.recvFrom(buffer + size, buffer_size - size, host);
-
-        if (isCompleteMessage(buffer, size)) {
-            host.id =
-                static_cast<u32>(std::find_if(config.hosts().begin(),
-                                              config.hosts().end(),
-                                              [&](const Host &e) {
-                                                  return e.ip == host.ip &&
-                                                         e.port == host.port;
-                                              }) -
-                                 config.hosts().begin()) +
-                1;
-
-            auto payload = handleMessage(buffer, size, host);
-            if (payload.has_value()) {
-                return {payload.value(), host};
-            } else {
-                size = 0;
-            }
-        }
-
-        if (size == buffer_size) {
-            buffer = reinterpret_cast<u8 *>(
-                realloc(buffer, buffer_size += 1024));
-        }
-    } */
-
+void Proxy::wait() {
     u8 buffer[UDP_PACKET_MAX_SIZE] = {0};
 
     Host host;
@@ -88,7 +48,7 @@ std::pair<Proxy::Message, Host> Proxy::receive() {
 
         size_t size = socket.recvFrom(buffer, UDP_PACKET_MAX_SIZE, host);
 
-        if (size > 0) {
+        if (isCompleteMessage(buffer, size)) {
             host.id =
                 static_cast<u32>(std::find_if(config.hosts().begin(),
                                               config.hosts().end(),
@@ -101,7 +61,7 @@ std::pair<Proxy::Message, Host> Proxy::receive() {
 
             auto payload = handleMessage(buffer, size, host);
             if (payload.has_value()) {
-                return {payload.value(), host};
+                callback_(payload.value(), host);
             } else {
                 size = 0;
             }
@@ -125,8 +85,8 @@ size_t Proxy::serialize(const Proxy::Message &msg, u8 **buff) {
     return size;
 }
 
-std::optional<Proxy::Message>
-Proxy::handleMessage(u8 *buff, size_t size, const Host &host) {
+std::optional<Proxy::Message> Proxy::handleMessage(u8 *buff, size_t size,
+                                                   const Host &host) {
     u8 type;
     buff = read_byte(buff, type);
 

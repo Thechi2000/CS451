@@ -5,7 +5,6 @@
 #include <string>
 
 #include "parser.hpp"
-#include "serde.hpp"
 #include <proxy.hpp>
 #include <signal.h>
 
@@ -63,34 +62,27 @@ int main(int argc, char **argv) {
 
     std::cout << "Broadcasting and delivering messages...\n\n";
 
-    Proxy pl(config.host());
+    Proxy proxy(config.host());
 
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
 
     try {
         if (config.id() == config.receiverId()) {
-            while (true) {
-                auto pair = pl.receive();
-                const auto &msg = pair.first;
-                const auto &h = pair.second;
-
+            proxy.setCallback([&](Proxy::Message &msg, const Host &h) {
                 out << "d " << h.id << " " << msg.seq << std::endl;
-            }
+            });
         } else {
-            u32 seq = 0;
             for (auto &entry : config.entries()) {
                 for (size_t i = 0; i < entry.count; ++i) {
                     std::string s = std::to_string(i);
                     out << "b " << i << std::endl;
-                    pl.send({0, NULL}, config.host(entry.id));
+                    proxy.send({0, NULL}, config.host(entry.id));
                 }
             }
-
-            while (true) {
-                pl.receive();
-            }
         }
+
+        proxy.wait();
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(-1);
