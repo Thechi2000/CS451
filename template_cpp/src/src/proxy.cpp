@@ -7,11 +7,11 @@
 #include <linux/falloc.h>
 #include <netinet/in.h>
 #include <optional>
-#include <pl.hpp>
+#include <proxy.hpp>
 #include <serde.hpp>
 #include <set>
 
-PerfectLink::PerfectLink(const Host &host)
+Proxy::Proxy(const Host &host)
     : seq_(1),
       received_(config.hosts().size(), DeliveredEntry{1, std::set<u32>()}),
       sent_(), lastSend_(Clock::now()), socket(host) {
@@ -19,21 +19,21 @@ PerfectLink::PerfectLink(const Host &host)
         received_.emplace_back();
     }
 }
-PerfectLink::~PerfectLink() {}
+Proxy::~Proxy() {}
 
-void PerfectLink::send(const Payload &p, const Host &host) {
+void Proxy::send(const Payload &p, const Host &host) {
     u32 seq = seq_++;
     innerSend({seq, p}, host);
     sent_.insert({seq, {{seq, p}, Host(host), false}});
 }
-void PerfectLink::innerSend(const Message &msg, const Host &host) {
+void Proxy::innerSend(const Message &msg, const Host &host) {
     u8 *buff;
     size_t size = serialize(msg, &buff);
     socket.sendTo(buff, size, host);
     free(buff);
 }
 
-std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
+std::pair<Proxy::Message, Host> Proxy::receive() {
     /* size_t buffer_size = 1024, size = 0;
     u8 *buffer = reinterpret_cast<uint8_t *>(malloc(buffer_size));
 
@@ -109,7 +109,7 @@ std::pair<PerfectLink::Message, Host> PerfectLink::receive() {
     }
 }
 
-size_t PerfectLink::serialize(const PerfectLink::Message &msg, u8 **buff) {
+size_t Proxy::serialize(const Proxy::Message &msg, u8 **buff) {
     size_t size = 9 + msg.content.length;
     *buff = reinterpret_cast<u8 *>(malloc(size));
 
@@ -125,8 +125,8 @@ size_t PerfectLink::serialize(const PerfectLink::Message &msg, u8 **buff) {
     return size;
 }
 
-std::optional<PerfectLink::Message>
-PerfectLink::handleMessage(u8 *buff, size_t size, const Host &host) {
+std::optional<Proxy::Message>
+Proxy::handleMessage(u8 *buff, size_t size, const Host &host) {
     u8 type;
     buff = read_byte(buff, type);
 
@@ -196,7 +196,7 @@ PerfectLink::handleMessage(u8 *buff, size_t size, const Host &host) {
     }
 }
 
-void PerfectLink::ack(const Ack &ack, const Host &host) {
+void Proxy::ack(const Ack &ack, const Host &host) {
     size_t size = sizeof(Ack) + 1;
     u8 *buffer = reinterpret_cast<uint8_t *>(malloc(size));
 

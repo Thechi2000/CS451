@@ -16,7 +16,7 @@ struct Ack {
     u32 host;
 };
 
-class PerfectLink {
+class Proxy {
   public:
     struct Payload {
         u32 length;
@@ -28,8 +28,8 @@ class PerfectLink {
         Payload content;
     };
 
-    PerfectLink(const Host &host);
-    ~PerfectLink();
+    Proxy(const Host &host);
+    ~Proxy();
 
     void send(const Payload &p, const Host &host);
     std::pair<Message, Host> receive();

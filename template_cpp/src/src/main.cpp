@@ -6,7 +6,7 @@
 
 #include "parser.hpp"
 #include "serde.hpp"
-#include <pl.hpp>
+#include <proxy.hpp>
 #include <signal.h>
 
 static void stop(int) {
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Broadcasting and delivering messages...\n\n";
 
-    PerfectLink pl(config.host());
+    Proxy pl(config.host());
 
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
