@@ -47,8 +47,9 @@ void Proxy::wait() {
         }
 
         size_t size = socket.recvFrom(buffer, UDP_PACKET_MAX_SIZE, host);
+        size_t processedBytes = 0;
 
-        if (size > 0) {
+        while (size > processedBytes) {
             host.id =
                 static_cast<u32>(std::find_if(config.hosts().begin(),
                                               config.hosts().end(),
@@ -59,12 +60,8 @@ void Proxy::wait() {
                                  config.hosts().begin()) +
                 1;
 
-            auto payload = handleMessage(buffer, size, host);
-            if (payload.has_value()) {
-                callback_(payload.value(), host);
-            } else {
-                size = 0;
-            }
+            processedBytes += handleMessage(buffer + processedBytes,
+                                            size - processedBytes, host);
         }
     }
 }
@@ -85,8 +82,7 @@ size_t Proxy::serialize(const Proxy::Message &msg, u8 **buff) {
     return size;
 }
 
-std::optional<Proxy::Message> Proxy::handleMessage(u8 *buff, size_t size,
-                                                   const Host &host) {
+size_t Proxy::handleMessage(u8 *buff, size_t size, const Host &host) {
     u8 type;
     buff = read_byte(buff, type);
 
@@ -94,11 +90,7 @@ std::optional<Proxy::Message> Proxy::handleMessage(u8 *buff, size_t size,
         Message b;
         buff = read_u32(buff, b.seq);
         buff = read_u32(buff, b.content.length);
-
-        b.content.bytes = malloc(b.content.length);
-        if (b.content.length) {
-            memcpy(b.content.bytes, buff, b.content.length);
-        }
+        b.content.bytes = buff;
 
         Ack d = Ack{b.seq, static_cast<u32>(host.id)};
 
@@ -132,7 +124,9 @@ std::optional<Proxy::Message> Proxy::handleMessage(u8 *buff, size_t size,
             deliveredEntry.delivered.insert(d.seq);
         }
 
-        return b;
+        callback_(b, host);
+
+        return 9 + b.content.length;
 
     } else {
         if (size != sizeof(Ack) + 1) {
@@ -152,7 +146,7 @@ std::optional<Proxy::Message> Proxy::handleMessage(u8 *buff, size_t size,
             }
         }
 
-        return {};
+        return 9;
     }
 }
 

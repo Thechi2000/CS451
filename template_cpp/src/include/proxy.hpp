@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <functional>
 #include <map>
-#include <optional>
 #include <parser.hpp>
 #include <set>
 #include <udp.hpp>
@@ -13,7 +12,7 @@
 
 struct Ack {
     u32 seq;
-    u32 host;
+    u32 host; // TODO: Remove
 };
 
 class Proxy {
@@ -59,7 +58,7 @@ class Proxy {
     size_t serialize(const Message &msg, u8 **buff);
     size_t serialize(const Ack &msg, u8 **buff);
 
-    std::optional<Message> handleMessage(u8 *buff, size_t size,
+    size_t handleMessage(u8 *buff, size_t size,
                                          const Host &host);
 
     void ack(const Ack &ack, const Host &host);
