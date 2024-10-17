@@ -59,9 +59,8 @@ class Proxy {
     size_t serialize(const Message &msg, u8 *buff);
     size_t serialize(const Ack &msg, u8 *buff);
 
-    size_t handleMessage(u8 *buff, size_t size, const Host &host);
-
-    void ack(const Ack &ack, const Host &host);
+    size_t handleMessage(u8 *buff, size_t size, const Host &host, u8 *acks,
+                         size_t &acksSize);
 
     u32 seq_;
 
@@ -72,4 +71,6 @@ class Proxy {
     Callback callback_;
 
     UdpSocket socket;
+
+    const static size_t ACK_SIZE = sizeof(Ack) + 1;
 };

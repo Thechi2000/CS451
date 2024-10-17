@@ -1,7 +1,6 @@
 #include "parser.hpp"
 #include <algorithm>
 #include <cstddef>
-#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <linux/falloc.h>
@@ -72,7 +71,10 @@ void Proxy::wait() {
         size_t size = socket.recvFrom(buffer, UDP_PACKET_MAX_SIZE, host);
         size_t processedBytes = 0;
 
-        while (size > processedBytes) {
+        if (size > 0) {
+            u8 acks[8 * ACK_SIZE];
+            size_t acksSize = 0;
+
             host.id =
                 static_cast<u32>(std::find_if(config.hosts().begin(),
                                               config.hosts().end(),
@@ -83,8 +85,14 @@ void Proxy::wait() {
                                  config.hosts().begin()) +
                 1;
 
-            processedBytes += handleMessage(buffer + processedBytes,
-                                            size - processedBytes, host);
+            while (size > processedBytes) {
+
+                processedBytes +=
+                    handleMessage(buffer + processedBytes,
+                                  size - processedBytes, host, acks, acksSize);
+            }
+
+            socket.sendTo(acks, acksSize, host);
         }
     }
 }
@@ -103,7 +111,8 @@ size_t Proxy::serialize(const Proxy::Message &msg, u8 *buff) {
     return size;
 }
 
-size_t Proxy::handleMessage(u8 *buff, size_t size, const Host &host) {
+size_t Proxy::handleMessage(u8 *buff, size_t size, const Host &host, u8 *acks,
+                            size_t &acksSize) {
     u8 type;
     buff = read_byte(buff, type);
 
@@ -114,8 +123,7 @@ size_t Proxy::handleMessage(u8 *buff, size_t size, const Host &host) {
         b.content.bytes = buff;
 
         Ack d = Ack{b.seq, static_cast<u32>(host.id)};
-
-        ack(d, host);
+        acksSize += serialize(d, acks);
 
         auto &deliveredEntry = received_[d.host - 1];
 
@@ -171,14 +179,10 @@ size_t Proxy::handleMessage(u8 *buff, size_t size, const Host &host) {
     }
 }
 
-void Proxy::ack(const Ack &ack, const Host &host) {
-    size_t size = sizeof(Ack) + 1;
-    u8 *buffer = reinterpret_cast<uint8_t *>(malloc(size));
+size_t Proxy::serialize(const Ack &ack, u8 *buff) {
+    buff = write_byte(buff, 1);
+    buff = write_u32(buff, ack.seq);
+    buff = write_u32(buff, ack.host);
 
-    auto tmp = buffer;
-    tmp = write_byte(tmp, 1);
-    tmp = write_u32(tmp, ack.seq);
-    tmp = write_u32(tmp, ack.host);
-
-    socket.sendTo(buffer, size, host);
+    return ACK_SIZE;
 }
