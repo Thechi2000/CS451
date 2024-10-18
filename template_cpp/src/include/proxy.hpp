@@ -41,7 +41,6 @@ class Proxy {
   private:
     struct ToSend {
         Message msg; // TODO: Store serialized message
-        Host host;
         bool acked;
     };
 
@@ -51,7 +50,7 @@ class Proxy {
     };
 
     void innerSend(const Message &msg, const Host &host);
-    void innerSend(const std::vector<Payload> &payloads, const Host &host);
+    void innerSend(const std::vector<Message> &payloads, const Host &host);
 
     using Clock = std::chrono::system_clock;
     const Clock::duration TIMEOUT = Clock::duration(100000000); // 100ms
@@ -59,13 +58,13 @@ class Proxy {
     size_t serialize(const Message &msg, u8 *buff);
     size_t serialize(const Ack &msg, u8 *buff);
 
-    size_t handleMessage(u8 *buff, size_t size, const Host &host, u8 *acks,
+    size_t handleMessage(u8 *buff, const Host &host, u8 *acks,
                          size_t &acksSize);
 
     u32 seq_;
 
     std::vector<DeliveredEntry> received_;
-    std::map<u32, ToSend> sent_;
+    std::vector<std::map<u32, ToSend>> sent_;
     Clock::time_point lastSend_;
 
     Callback callback_;
