@@ -143,10 +143,10 @@ size_t Proxy::handleMessage(u8 *buff, const Host &host, u8 *acks,
         buff = read_u32(buff, b.content.length);
         b.content.bytes = buff;
 
-        Ack d = Ack{b.seq, static_cast<u32>(host.id)};
+        Ack d = Ack{b.seq};
         acksSize += serialize(d, acks);
 
-        auto &deliveredEntry = received_[d.host - 1];
+        auto &deliveredEntry = received_[host.id - 1];
 
         if (d.seq < deliveredEntry.lowerBound ||
             deliveredEntry.delivered.count(d.seq) > 0) {
@@ -181,7 +181,6 @@ size_t Proxy::handleMessage(u8 *buff, const Host &host, u8 *acks,
     } else {
         Ack b;
         buff = read_u32(buff, b.seq);
-        buff = read_u32(buff, b.host);
 
         if (sent_[host.id - 1].count(b.seq) > 0) {
             auto &entry = sent_[host.id - 1][b.seq];
@@ -199,7 +198,6 @@ size_t Proxy::handleMessage(u8 *buff, const Host &host, u8 *acks,
 size_t Proxy::serialize(const Ack &ack, u8 *buff) {
     buff = write_byte(buff, 1);
     buff = write_u32(buff, ack.seq);
-    buff = write_u32(buff, ack.host);
 
     return ACK_SIZE;
 }

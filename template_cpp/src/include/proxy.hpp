@@ -10,11 +10,6 @@
 #include <udp.hpp>
 #include <vector>
 
-struct Ack {
-    u32 seq;
-    u32 host; // TODO: Remove
-};
-
 class Proxy {
   public:
     struct Payload {
@@ -49,6 +44,11 @@ class Proxy {
         std::set<u32> delivered;
     };
 
+    struct Ack {
+        u32 seq;
+    };
+    const static size_t ACK_SIZE = sizeof(Ack) + 1;
+
     void innerSend(const Message &msg, const Host &host);
     void innerSend(const std::vector<Message> &payloads, const Host &host);
 
@@ -70,6 +70,4 @@ class Proxy {
     Callback callback_;
 
     UdpSocket socket;
-
-    const static size_t ACK_SIZE = sizeof(Ack) + 1;
 };

@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
                 std::vector<Proxy::Payload> messages(entry.count, {0, NULL});
 
                 for (size_t i = 0; i < entry.count; ++i) {
-                    out << "b " << i << std::endl;
+                    out << "b " << i + 1 << std::endl;
                 }
 
                 proxy.send(messages, config.host(config.receiverId()));
