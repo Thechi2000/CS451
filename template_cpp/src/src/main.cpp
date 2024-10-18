@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "parser.hpp"
+#include <iostream>
 #include <proxy.hpp>
 #include <signal.h>
 #include <vector>
@@ -75,6 +76,11 @@ int main(int argc, char **argv) {
         } else {
             for (auto &entry : config.entries()) {
                 std::vector<Proxy::Payload> messages(entry.count, {0, NULL});
+
+                for (size_t i = 0; i < entry.count; ++i) {
+                    out << "b " << i << std::endl;
+                }
+
                 proxy.send(messages, config.host(config.receiverId()));
             }
         }
