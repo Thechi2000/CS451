@@ -22,47 +22,50 @@ Proxy::~Proxy() {}
 
 void Proxy::send(const Payload &p, const Host &host) {
     u32 seq = seq_++;
-    innerSend(Message{seq, p}, host);
-    sent_[host.id - 1].insert({seq, {{seq, p}, false}});
+
+    void *buffer = malloc(UDP_PACKET_MAX_SIZE);
+    size_t size = serialize(Message{seq, p}, reinterpret_cast<u8 *>(buffer));
+
+    sent_[host.id - 1].insert({seq, {buffer, size, false}});
+
+    socket.sendTo(buffer, size, host);
 }
 void Proxy::send(const std::vector<Payload> &payloads, const Host &host) {
-    std::vector<Message> messages(payloads.size());
+    std::vector<ToSend> messages(payloads.size());
     for (size_t i = 0; i < payloads.size(); ++i) {
-        auto &msg = messages[i];
-        msg.seq = seq_++;
-        msg.content = payloads[i];
-        sent_[host.id - 1].insert({msg.seq, {msg, false}});
+        auto &to_send = messages[i];
+        Message msg = {seq_++, payloads[i]};
+
+        void *buffer = malloc(UDP_PACKET_MAX_SIZE);
+        size_t size = serialize(msg, reinterpret_cast<u8 *>(buffer));
+
+        to_send = {buffer, size, false};
+
+        sent_[host.id - 1].insert({msg.seq, to_send});
     }
 
     innerSend(messages, host);
 }
 
-void Proxy::innerSend(const std::vector<Message> &payloads, const Host &host) {
+void Proxy::innerSend(const std::vector<ToSend> &payloads, const Host &host) {
     u8 buffer[UDP_PACKET_MAX_SIZE];
 
     for (auto it = payloads.begin(); it != payloads.end();) {
         size_t size = 0;
         for (int i = 0; i < 8 && it != payloads.end(); ++i) {
-            size_t messageSize = 9 + it->content.length;
 
-            if (size + messageSize > UDP_PACKET_MAX_SIZE) {
+            if (size + it->length > UDP_PACKET_MAX_SIZE) {
                 break;
             }
 
-            serialize(*it, buffer + size);
+            memcpy(buffer + size, it->message, it->length);
 
-            size += messageSize;
+            size += it->length;
             it++;
         }
 
         socket.sendTo(buffer, size, host);
     }
-}
-
-void Proxy::innerSend(const Message &msg, const Host &host) {
-    u8 buff[UDP_PACKET_MAX_SIZE];
-    size_t size = serialize(msg, buff);
-    socket.sendTo(buff, size, host);
 }
 
 void Proxy::wait() {
@@ -78,11 +81,11 @@ void Proxy::wait() {
                     continue;
                 }
 
-                std::vector<Message> messages(sent_[hostIdx].size());
+                std::vector<ToSend> messages(sent_[hostIdx].size());
 
                 size_t i = 0;
                 for (const auto &entry : sent_[hostIdx]) {
-                    messages[i] = entry.second.msg;
+                    messages[i] = entry.second;
                     i++;
                 }
 
@@ -187,6 +190,7 @@ size_t Proxy::handleMessage(u8 *buff, const Host &host, u8 *acks,
             entry.acked = true;
 
             if (entry.acked) {
+                free(sent_[host.id - 1][b.seq].message);
                 sent_[host.id - 1].erase(b.seq);
             }
         }

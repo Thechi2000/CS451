@@ -2,5 +2,6 @@
   "clangd.enableCodeCompletion": true,
   "clangd.arguments": [
     "--compile-commands-dir=${workspaceFolder}/template_cpp/target"
-  ]
+  ],
+  "cmake.sourceDirectory": "/home/ludovic/Desktop/epfl/cs451/template_cpp"
 }
