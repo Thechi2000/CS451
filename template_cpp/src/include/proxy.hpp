@@ -42,7 +42,7 @@ class Proxy {
 
     struct DeliveredEntry {
         u32 lowerBound;
-        std::set<u32> delivered;
+        std::map<u32, Message> delivered;
     };
 
     struct Ack {

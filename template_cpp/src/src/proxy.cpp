@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <linux/falloc.h>
 #include <netinet/in.h>
 #include <optional>
@@ -11,8 +12,8 @@
 #include <set>
 
 Proxy::Proxy(const Host &host)
-    : seq_(1),
-      received_(config.hosts().size(), DeliveredEntry{1, std::set<u32>()}),
+    : seq_(1), received_(config.hosts().size(),
+                         DeliveredEntry{1, std::map<u32, Message>()}),
       sent_(config.hosts().size()), lastSend_(Clock::now()), socket(host) {
     for (size_t i = 0; i < config.hosts().size() + 1; ++i) {
         received_.emplace_back();
@@ -159,25 +160,28 @@ size_t Proxy::handleMessage(u8 *buff, const Host &host, u8 *acks,
         if (d.seq == deliveredEntry.lowerBound) {
             deliveredEntry.lowerBound++;
 
+            callback_(b, host);
+
             auto begin = deliveredEntry.delivered.begin();
             auto it = begin;
 
-            if (*it == deliveredEntry.lowerBound) {
-                deliveredEntry.lowerBound++;
+            if (it->first == deliveredEntry.lowerBound) {
+                do {
+                    callback_(it->second, host);
+                    free(it->second.content.bytes);
 
-                it++;
-                while (*it == deliveredEntry.lowerBound) {
                     deliveredEntry.lowerBound++;
-                    it++;
-                }
+                } while ((++it)->first == deliveredEntry.lowerBound);
 
                 deliveredEntry.delivered.erase(begin, it);
             }
         } else {
-            deliveredEntry.delivered.insert(d.seq);
-        }
+            u8 *new_buff = reinterpret_cast<u8 *>(malloc(b.content.length));
+            memcpy(new_buff, buff, b.content.length);
+            b.content.bytes = new_buff;
 
-        callback_(b, host);
+            deliveredEntry.delivered.insert({d.seq, b});
+        }
 
         return 9 + b.content.length;
 
