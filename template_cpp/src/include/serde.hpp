@@ -1,10 +1,12 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <netinet/in.h>
 #include <string>
+#include <variant>
 
 typedef uint8_t u8;
 typedef uint32_t u32;
@@ -41,4 +43,11 @@ static inline u8 *read_str(u8 *buff, std::string &str) {
     memcpy(str.data(), buff, len);
 
     return buff + len;
+}
+
+static inline u8 *ser(const std::monostate &, u8 *buff, size_t &) {
+    return buff;
+}
+static inline u8 *deserialize(const std::monostate &, u8 *buff, size_t &) {
+    return buff;
 }

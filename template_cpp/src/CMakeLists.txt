@@ -2,7 +2,7 @@
 # You can, however, change the list of files that comprise this variable.
 
 include_directories(include)
-set(SOURCES src/main.cpp src/proxy.cpp src/udp.cpp src/parser.cpp)
+set(SOURCES src/main.cpp src/udp.cpp src/parser.cpp)
 
 # DO NOT EDIT THE FOLLOWING LINES
 find_package(Threads)

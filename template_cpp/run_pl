@@ -1,6 +1,6 @@
 clear
 
-for id in $(seq 1 2); do
+for id in $(seq 1 3); do
     (unbuffer bin/da_proc --id $id --hosts ../example/hosts --output ../example/output/$id ../example/configs/perfect-links.config || echo "EXITED") | sed -u -e "s/^/[PROCESS $id] /" &
 done
 

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <proxy.hpp>
 #include <signal.h>
+#include <variant>
 #include <vector>
 
 static void stop(int) {
@@ -63,19 +64,21 @@ int main(int argc, char **argv) {
 
     std::cout << "Broadcasting and delivering messages...\n\n";
 
-    Proxy proxy(config.host());
+    Proxy<std::monostate> proxy(config.host());
 
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
 
     try {
         if (config.id() == config.receiverId()) {
-            proxy.setCallback([&](Proxy::Message &msg, const Host &h) {
-                out << "d " << h.id << " " << msg.seq << std::endl;
-            });
+            proxy.setCallback(
+                [&](Proxy<std::monostate>::Message &msg, const Host &h) {
+                    out << "d " << h.id << " " << msg.seq << std::endl;
+                });
         } else {
             for (auto &entry : config.entries()) {
-                std::vector<Proxy::Payload> messages(entry.count, {0, NULL});
+                std::vector<std::monostate> messages(entry.count,
+                                                     std::monostate{});
 
                 for (size_t i = 0; i < entry.count; ++i) {
                     out << "b " << i + 1 << std::endl;
