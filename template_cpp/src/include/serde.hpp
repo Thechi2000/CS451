@@ -48,6 +48,6 @@ static inline u8 *read_str(u8 *buff, std::string &str) {
 static inline u8 *ser(const std::monostate &, u8 *buff, size_t &) {
     return buff;
 }
-static inline u8 *deserialize(const std::monostate &, u8 *buff, size_t &) {
+static inline u8 *deserialize(std::monostate &, u8 *buff, size_t &) {
     return buff;
 }

@@ -4,8 +4,8 @@
 #include <iostream>
 
 #include "parser.hpp"
+#include <broadcast_proxy.hpp>
 #include <iostream>
-#include <proxy.hpp>
 #include <signal.h>
 #include <variant>
 #include <vector>
@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Broadcasting and delivering messages...\n\n";
 
-    Proxy<std::monostate> proxy(config.host());
+    BroadcastProxy<std::monostate> proxy(config.host());
 
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
@@ -72,23 +72,16 @@ int main(int argc, char **argv) {
     try {
         if (config.id() == config.receiverId()) {
             proxy.setCallback(
-                [&](Proxy<std::monostate>::Message &msg, const Host &h) {
-                    out << "d " << h.id << " " << msg.seq << std::endl;
-                });
+                [&](BroadcastProxy<std::monostate>::Message &) noexcept {});
         } else {
             for (auto &entry : config.entries()) {
-                std::vector<std::monostate> messages(entry.count,
-                                                     std::monostate{});
-
                 for (size_t i = 0; i < entry.count; ++i) {
                     out << "b " << i + 1 << std::endl;
                 }
 
-                proxy.send(messages, config.host(config.receiverId()));
+                proxy.broadcast({});
             }
         }
-
-        proxy.wait();
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(-1);
