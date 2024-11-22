@@ -21,12 +21,15 @@ template <typename Payload> class Proxy {
     ~Proxy();
 
     void send(const Payload &p, const Host &host);
+    void send(const Payload &p, u32 seq, const Host &host);
     void send(const std::vector<Payload> &payloads, const Host &host);
 
     using Callback = std::function<void(Message &message, const Host &host)>;
     void setCallback(Callback cb) { callback_ = cb; }
 
     void wait();
+
+    inline u32 nextSeq() { return seq_++; }
 
   private:
     struct ToSend {

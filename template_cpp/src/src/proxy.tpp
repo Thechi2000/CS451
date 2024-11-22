@@ -16,8 +16,10 @@ template <typename Payload> Proxy<Payload>::~Proxy() {}
 
 template <typename Payload>
 void Proxy<Payload>::send(const Payload &p, const Host &host) {
-    u32 seq = seq_++;
-
+    send(p, nextSeq(), host);
+}
+template <typename Payload>
+void Proxy<Payload>::send(const Payload &p, u32 seq, const Host &host) {
     void *buffer = malloc(UDP_PACKET_MAX_SIZE);
     size_t size = serialize(Message{seq, p}, reinterpret_cast<u8 *>(buffer));
 
@@ -31,7 +33,7 @@ void Proxy<Payload>::send(const std::vector<Payload> &payloads,
     std::vector<ToSend> messages(payloads.size());
     for (size_t i = 0; i < payloads.size(); ++i) {
         auto &to_send = messages[i];
-        Message msg = {seq_++, payloads[i]};
+        Message msg = {nextSeq(), payloads[i]};
 
         void *buffer = malloc(UDP_PACKET_MAX_SIZE);
         size_t size = serialize(msg, reinterpret_cast<u8 *>(buffer));
