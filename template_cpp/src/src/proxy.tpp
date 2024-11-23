@@ -1,12 +1,11 @@
-#include <proxy.hpp>
-
 #include <algorithm>
 #include <optional>
+#include <proxy.hpp>
 
 template <typename Payload>
 Proxy<Payload>::Proxy(const Host &host)
-    : seq_(1), received_(config.hosts().size(),
-                         DeliveredEntry{1, std::map<u32, Message>()}),
+    : seq_(1),
+      received_(config.hosts().size(), DeliveredEntry{1, std::set<u32>()}),
       sent_(config.hosts().size()), lastSend_(Clock::now()), socket(host) {
     for (size_t i = 0; i < config.hosts().size() + 1; ++i) {
         received_.emplace_back();
@@ -165,24 +164,27 @@ size_t Proxy<Payload>::handleMessage(u8 *buff, const Host &host, u8 *acks,
         if (d.seq == deliveredEntry.lowerBound) {
             deliveredEntry.lowerBound++;
 
-            callback_(b, host);
-
             auto begin = deliveredEntry.delivered.begin();
             auto it = begin;
 
-            if (it->first == deliveredEntry.lowerBound) {
-                do {
-                    callback_(it->second, host);
+            if (*it == deliveredEntry.lowerBound) {
+                deliveredEntry.lowerBound++;
+
+                it++;
+                while (*it == deliveredEntry.lowerBound) {
                     deliveredEntry.lowerBound++;
-                } while ((++it)->first == deliveredEntry.lowerBound);
+                    it++;
+                }
 
                 deliveredEntry.delivered.erase(begin, it);
             }
         } else {
-            deliveredEntry.delivered.insert({d.seq, b});
+            deliveredEntry.delivered.insert(d.seq);
         }
 
-        return processed_size;
+        callback_(b, host);
+
+        return 9 + b.content.length;
 
     } else {
         Ack b;

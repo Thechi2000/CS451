@@ -4,6 +4,7 @@
 #include <serde.hpp>
 #include <udp.hpp>
 
+#include <set>
 #include <chrono>
 #include <cstddef>
 #include <functional>
@@ -40,7 +41,7 @@ template <typename Payload> class Proxy {
 
     struct DeliveredEntry {
         u32 lowerBound;
-        std::map<u32, Message> delivered;
+        std::set<u32> delivered;
     };
 
     struct Ack {
