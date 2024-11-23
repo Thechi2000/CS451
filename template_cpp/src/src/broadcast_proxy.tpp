@@ -31,10 +31,13 @@ BroadcastProxy<P>::BroadcastProxy(const Host &host) : proxy_(host) {
                 ack_.insert(
                     {msg_id, std::vector<bool>(config.hosts().size(), false)});
             }
-            ack_[msg_id][host.id] = true;
+            ack_[msg_id][host.id - 1] = true;
 
             if (pending_.count(msg_id) == 0) {
                 pending_.insert({msg_id, msg.content});
+                for (auto &host : config.hosts()) {
+                    proxy_.send(msg.content, msg.seq, host);
+                }
             }
 
             size_t acked_count = 0;
@@ -44,7 +47,7 @@ BroadcastProxy<P>::BroadcastProxy(const Host &host) : proxy_(host) {
                 }
             }
 
-            if (acked_count > config.hosts().size()) {
+            if (acked_count == config.hosts().size()) {
                 callback_(msg);
                 ack_.erase(msg_id);
                 pending_.erase(msg_id);

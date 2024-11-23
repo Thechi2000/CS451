@@ -1,8 +1,7 @@
-#include <arpa/inet.h>
 #include <cerrno>
 #include <cstdio>
 #include <fcntl.h>
-#include <netinet/in.h>
+#include <strings.h>
 #include <sys/socket.h>
 #include <udp.hpp>
 #include <unistd.h>
@@ -71,6 +70,7 @@ size_t UdpSocket::sendTo(const void *data, size_t size, const Host &host) {
 size_t UdpSocket::recvFrom(void *buffer, size_t size, Host &host) {
     struct sockaddr_in server;
     socklen_t server_len;
+    server_len = sizeof(server);
 
     auto received =
         recvfrom(fd, buffer, size, 0,

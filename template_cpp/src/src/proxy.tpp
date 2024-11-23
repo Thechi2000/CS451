@@ -184,7 +184,7 @@ size_t Proxy<Payload>::handleMessage(u8 *buff, const Host &host, u8 *acks,
 
         callback_(b, host);
 
-        return 9 + b.content.length;
+        return processed_size;
 
     } else {
         Ack b;

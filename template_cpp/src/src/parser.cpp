@@ -1,8 +1,10 @@
 #include <algorithm>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <parser.hpp>
 #include <sstream>
+#include <string>
 
 Parser config = Parser();
 
@@ -105,12 +107,12 @@ void Parser::parseConfig() {
         }
 
         long delim = static_cast<long>(line.find_first_of(' '));
-        auto entry = ConfigEntry{
+        auto entry = delim != -1 ? ConfigEntry{
             static_cast<size_t>(
                 std::stoi(std::string(line.begin() + delim + 1, line.end()))),
             static_cast<size_t>(
                 std::stoi(std::string(line.begin(), line.begin() + delim))),
-        };
+        }: ConfigEntry{SIZE_MAX, static_cast<size_t>(std::stoi(line))};
         receiverId_ = entry.id;
         entries_.push_back(entry);
     }

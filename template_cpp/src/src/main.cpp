@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "parser.hpp"
-#include <broadcast_proxy.hpp>
+#include <frb.hpp>
 #include <iostream>
 #include <signal.h>
 #include <variant>
@@ -63,22 +63,21 @@ int main(int argc, char **argv) {
 
     std::cout << "Broadcasting and delivering messages...\n\n";
 
-    BroadcastProxy<std::monostate> proxy(config.host());
+    FifoProxy<std::monostate> proxy(config.host());
 
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
 
-    try {
-        if (config.id() == config.receiverId()) {
-        } else {
-            for (auto &entry : config.entries()) {
-                for (size_t i = 0; i < entry.count; ++i) {
-                    out << "b " << i + 1 << std::endl;
-                }
+    proxy.setCallback([&](const auto &msg) {
+        out << "d " << msg.content.host << " " << msg.seq << "\n";
+    });
 
-                proxy.broadcast({});
-            }
+    try {
+        for (size_t i = 0; i < config.entries()[0].count; i++) {
+            out << "b " << i << "\n";
+            proxy.broadcast(std::monostate{});
         }
+        proxy.wait();
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(-1);
