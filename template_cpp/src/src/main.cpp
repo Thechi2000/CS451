@@ -8,7 +8,6 @@
 #include <iostream>
 #include <signal.h>
 #include <variant>
-#include <vector>
 
 static void stop(int) {
     // reset signal handlers to default
@@ -71,8 +70,6 @@ int main(int argc, char **argv) {
 
     try {
         if (config.id() == config.receiverId()) {
-            proxy.setCallback(
-                [&](BroadcastProxy<std::monostate>::Message &) noexcept {});
         } else {
             for (auto &entry : config.entries()) {
                 for (size_t i = 0; i < entry.count; ++i) {

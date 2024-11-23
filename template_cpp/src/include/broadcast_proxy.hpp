@@ -4,7 +4,6 @@
 #include "serde.hpp"
 #include <cstdint>
 #include <set>
-#include <variant>
 
 template <typename P> class BroadcastProxy {
   public:
@@ -17,7 +16,7 @@ template <typename P> class BroadcastProxy {
 
     BroadcastProxy(const Host &host);
 
-    using Callback = std::function<void(Message &msg)>;
+    using Callback = std::function<void(const Message &msg)>;
 
     void setCallback(Callback cb) { callback_ = cb; }
 
@@ -26,9 +25,9 @@ template <typename P> class BroadcastProxy {
   private:
     _Proxy proxy_;
 
-    std::map<uint64_t, std::vector<bool>> ack_;
-    std::map<uint64_t, Payload> pending_;
-    std::set<uint64_t> delivered_;
+    std::map<u64, std::vector<bool>> ack_;
+    std::map<u64, Payload> pending_;
+    std::set<u64> delivered_;
 
     Callback callback_;
 
