@@ -22,6 +22,8 @@ template <typename P> class BroadcastProxy {
 
     void broadcast(const P &payload);
 
+    void wait() {proxy_.wait();}
+
   private:
     _Proxy proxy_;
 
