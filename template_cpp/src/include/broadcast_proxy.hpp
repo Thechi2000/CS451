@@ -8,6 +8,7 @@
 template <typename P> class BroadcastProxy {
   public:
     using Payload = struct {
+        u32 order;
         u32 host;
         P payload;
     };
@@ -33,7 +34,7 @@ template <typename P> class BroadcastProxy {
 
     Callback callback_;
 
-    uint32_t seq_;
+    uint32_t order_;
 };
 
 #include "../src/broadcast_proxy.tpp"

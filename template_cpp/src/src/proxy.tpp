@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 #include <optional>
 #include <proxy.hpp>
 
@@ -15,7 +16,7 @@ template <typename Payload> Proxy<Payload>::~Proxy() {}
 
 template <typename Payload>
 void Proxy<Payload>::send(const Payload &p, const Host &host) {
-    send(p, nextSeq(), host);
+    send(p, seq_++, host);
 }
 template <typename Payload>
 void Proxy<Payload>::send(const Payload &p, u32 seq, const Host &host) {
@@ -32,7 +33,7 @@ void Proxy<Payload>::send(const std::vector<Payload> &payloads,
     std::vector<ToSend> messages(payloads.size());
     for (size_t i = 0; i < payloads.size(); ++i) {
         auto &to_send = messages[i];
-        Message msg = {nextSeq(), payloads[i]};
+        Message msg = {seq_++, payloads[i]};
 
         void *buffer = malloc(UDP_PACKET_MAX_SIZE);
         size_t size = serialize(msg, reinterpret_cast<u8 *>(buffer));

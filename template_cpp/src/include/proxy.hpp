@@ -30,8 +30,6 @@ template <typename Payload> class Proxy {
 
     void wait();
 
-    inline u32 nextSeq() { return seq_++; }
-
   private:
     struct ToSend {
         void *message;
@@ -47,7 +45,7 @@ template <typename Payload> class Proxy {
     struct Ack {
         u32 seq;
     };
-    const static size_t MSG_META_SIZE = 9;
+    const static size_t MSG_META_SIZE = 5;
     const static size_t ACK_SIZE = sizeof(Ack) + 1;
 
     void innerSend(const std::vector<ToSend> &payloads, const Host &host);

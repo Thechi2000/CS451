@@ -68,8 +68,9 @@ int main(int argc, char **argv) {
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
 
-    proxy.setCallback([&](const auto &msg) {
-        out << "d " << msg.content.host << " " << msg.seq << "\n";
+    proxy.setCallback([&](const FifoProxy<std::monostate>::Message &msg) {
+        out << "d " << msg.content.host << " " << msg.content.order << "\n";
+        out.flush();
     });
 
     try {

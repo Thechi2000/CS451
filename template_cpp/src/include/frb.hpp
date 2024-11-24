@@ -22,7 +22,7 @@ template <typename Payload> class FifoProxy {
     _BroadcastProxy proxy_;
 
     struct ToDeliver {
-        u32 seq;
+        u32 order;
         Message msg;
     };
 
