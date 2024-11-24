@@ -6,26 +6,21 @@ FifoProxy<Payload>::FifoProxy(const Host &host)
     : proxy_(host), received_(config.hosts().size()),
       delivered_(config.hosts().size()) {
     proxy_.setCallback([&](const Message &msg) {
-        auto &to_deliver = delivered_[msg.content.host - 1];
+        auto host_id = msg.content.host - 1;
+        auto &to_deliver = delivered_[host_id];
+        auto &received = received_[host_id];
+
         if (to_deliver == msg.content.order) {
             callback_(msg);
             to_deliver++;
 
-            auto it = received_[msg.content.host - 1].begin();
-            for (; it != received_[msg.content.host - 1].end(); ++it) {
-                if (it->order == to_deliver) {
-                    callback_(it->msg);
-                    to_deliver++;
-                } else {
-                    break;
-                }
+            while (!received.empty() && received.begin()->first == to_deliver) {
+                callback_(received.begin()->second);
+                received.erase(received.begin());
+                to_deliver++;
             }
-
-            received_[msg.content.host - 1].erase(
-                received_[msg.content.host - 1].begin(), it);
         } else {
-            received_[msg.content.host - 1].push_back(
-                ToDeliver{msg.content.order, msg});
+            received.insert({msg.content.order, msg});
         }
     });
 }

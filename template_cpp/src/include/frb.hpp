@@ -1,6 +1,8 @@
 #pragma once
 
+#include "serde.hpp"
 #include <broadcast_proxy.hpp>
+#include <map>
 #include <vector>
 
 template <typename Payload> class FifoProxy {
@@ -28,7 +30,7 @@ template <typename Payload> class FifoProxy {
 
     Callback callback_;
 
-    std::vector<std::vector<ToDeliver>> received_;
+    std::vector<std::map<u32, Message>> received_;
     std::vector<u32> delivered_;
 };
 
