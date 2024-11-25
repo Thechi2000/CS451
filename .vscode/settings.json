@@ -3,5 +3,10 @@
   "clangd.arguments": [
     "--compile-commands-dir=${workspaceFolder}/template_cpp/target"
   ],
-  "cmake.sourceDirectory": "/home/ludovic/Desktop/epfl/cs451/template_cpp"
+  "cmake.sourceDirectory": "/root/cs451/template_cpp",
+  "files.associations": {
+    "*.tpp": "cpp",
+    "cstddef": "cpp",
+    "exception": "cpp"
+  }
 }

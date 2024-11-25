@@ -3,7 +3,7 @@
 #include <ios>
 #include <iostream>
 
-#include "parser.hpp"
+#include <config.hpp>
 #include <frb.hpp>
 #include <iostream>
 #include <signal.h>

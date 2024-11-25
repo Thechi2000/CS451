@@ -16,9 +16,9 @@
 #include <host.hpp>
 #include <unistd.h>
 
-class Parser {
+class Config {
   public:
-    Parser() {}
+    Config() {}
 
     struct ConfigEntry {
         size_t id;
@@ -83,4 +83,4 @@ class Parser {
     std::vector<ConfigEntry> entries_;
 };
 
-extern Parser config;
+extern Config config;

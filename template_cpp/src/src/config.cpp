@@ -2,13 +2,13 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
-#include <parser.hpp>
+#include <config.hpp>
 #include <sstream>
 #include <string>
 
-Parser config = Parser();
+Config config = Config();
 
-bool Parser::parseInternal() {
+bool Config::parseInternal() {
     if (!parseID()) {
         return false;
     }
@@ -32,7 +32,7 @@ bool Parser::parseInternal() {
     return true;
 }
 
-void Parser::parseHosts() {
+void Config::parseHosts() {
 
     std::ifstream hostsFile(hostsPath());
     std::vector<Host> hosts;
@@ -95,7 +95,7 @@ void Parser::parseHosts() {
     hosts_ = hosts;
 }
 
-void Parser::parseConfig() {
+void Config::parseConfig() {
     std::fstream input(configPath_);
 
     while (true) {
@@ -118,7 +118,7 @@ void Parser::parseConfig() {
     }
 }
 
-void Parser::help(const int, char const *const *argv) {
+void Config::help(const int, char const *const *argv) {
     auto configStr = "CONFIG";
     std::cerr << "Usage: " << argv[0]
               << " --id ID --hosts HOSTS --output OUTPUT";
@@ -128,7 +128,7 @@ void Parser::help(const int, char const *const *argv) {
     exit(EXIT_FAILURE);
 }
 
-bool Parser::parseID() {
+bool Config::parseID() {
     if (argc_ < 3) {
         return false;
     }
@@ -150,7 +150,7 @@ bool Parser::parseID() {
     return false;
 }
 
-bool Parser::parseHostPath() {
+bool Config::parseHostPath() {
     if (argc_ < 5) {
         return false;
     }
@@ -163,7 +163,7 @@ bool Parser::parseHostPath() {
     return false;
 }
 
-bool Parser::parseOutputPath() {
+bool Config::parseOutputPath() {
     if (argc_ < 7) {
         return false;
     }
@@ -176,7 +176,7 @@ bool Parser::parseOutputPath() {
     return false;
 }
 
-bool Parser::parseConfigPath() {
+bool Config::parseConfigPath() {
     if (argc_ < 8) {
         return false;
     }
@@ -185,25 +185,25 @@ bool Parser::parseConfigPath() {
     return true;
 }
 
-bool Parser::isPositiveNumber(const std::string &s) const {
+bool Config::isPositiveNumber(const std::string &s) const {
     return !s.empty() && std::find_if(s.begin(), s.end(), [](unsigned char c) {
                              return !std::isdigit(c);
                          }) == s.end();
 }
 
-void Parser::ltrim(std::string &s) {
+void Config::ltrim(std::string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(),
                                     [](int ch) { return !std::isspace(ch); }));
 }
 
-void Parser::rtrim(std::string &s) {
+void Config::rtrim(std::string &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(),
                          [](int ch) { return !std::isspace(ch); })
                 .base(),
             s.end());
 }
 
-void Parser::trim(std::string &s) {
+void Config::trim(std::string &s) {
     ltrim(s);
     rtrim(s);
 }
