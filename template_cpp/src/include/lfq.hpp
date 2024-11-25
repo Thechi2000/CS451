@@ -10,7 +10,6 @@ template <typename V> class LFQueue {
         head_ = node;
         tail_ = node;
     }
-    ~LFQueue();
 
     void enqueue(const V &value) {
         Entry *node = new Entry();
@@ -20,7 +19,8 @@ template <typename V> class LFQueue {
         while (true) {
             Entry *tail = tail_.load();
 
-            // This may cause an error, see https://web.archive.org/web/20190905090735/http://blog.shealevy.com/2015/04/23/use-after-free-bug-in-maged-m-michael-and-michael-l-scotts-non-blocking-concurrent-queue-algorithm/
+            // This may cause an error, see
+            // https://web.archive.org/web/20190905090735/http://blog.shealevy.com/2015/04/23/use-after-free-bug-in-maged-m-michael-and-michael-l-scotts-non-blocking-concurrent-queue-algorithm/
             // For now, I will apply the ostrich algorithm
             Entry *next = tail->next;
 
@@ -64,7 +64,7 @@ template <typename V> class LFQueue {
   private:
     struct Entry {
         V value;
-        Entry *next;
+        std::atomic<Entry *> next;
     };
 
     std::atomic<Entry *> head_;

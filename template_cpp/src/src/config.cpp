@@ -1,10 +1,11 @@
 #include <algorithm>
+#include <config.hpp>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
-#include <config.hpp>
 #include <sstream>
 #include <string>
+#include <thread>
 
 Config config = Config();
 
@@ -206,4 +207,35 @@ void Config::rtrim(std::string &s) {
 void Config::trim(std::string &s) {
     ltrim(s);
     rtrim(s);
+}
+
+Logger::Logger(const std::string &path)
+    : out_(path, std::ios_base::out | std::ios_base::trunc),
+      logThread_(&Logger::loop, this) {}
+Logger::~Logger() {
+    running_ = false;
+    logThread_.join();
+    out_.flush();
+}
+
+void Logger::broadcast(u32 id) { queue_.enqueue(Broadcast{id}); }
+void Logger::deliver(u32 id, u32 host) { queue_.enqueue(Deliver{id, host}); }
+
+void Logger::loop() {
+    running_ = true;
+    while (running_) {
+        auto maybe = queue_.dequeue();
+        if (!maybe) {
+            continue;
+        }
+
+        auto &msg = *maybe;
+        if (std::holds_alternative<Broadcast>(msg)) {
+            auto &b = std::get<Broadcast>(msg);
+            out_ << "b " << b.id << "\n";
+        } else {
+            auto &d = std::get<Deliver>(msg);
+            out_ << "d " << d.host << " " << d.id << "\n";
+        }
+    }
 }

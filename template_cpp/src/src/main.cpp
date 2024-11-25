@@ -65,13 +65,10 @@ int main(int argc, char **argv) {
     std::cout << "Broadcasting and delivering messages...\n\n";
 
     FifoProxy<std::monostate> proxy(config.host());
-
-    std::fstream out(config.outputPath(),
-                     std::ios_base::out | std::ios_base::trunc);
+    Logger logger(config.outputPath());
 
     proxy.setCallback([&](const FifoProxy<std::monostate>::Message &msg) {
-        out << "d " << msg.content.host << " " << msg.content.order << "\n";
-        out.flush();
+        logger.deliver(msg.content.order, msg.content.host);
     });
 
     try {
@@ -79,7 +76,7 @@ int main(int argc, char **argv) {
         proxy.broadcast(payloads);
 
         for (size_t i = 1; i < config.entries()[0].count; i++) {
-            out << "b " << i << "\n";
+            logger.broadcast(static_cast<u32>(i));
         }
 
         proxy.wait();

@@ -3,16 +3,13 @@
 #include <cstddef>
 #include <string>
 #include <vector>
-
-#include <cctype>
-
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-
 #include <cstdlib>
 #include <cstring>
+#include <thread>
+#include <fstream>
+
+#include <serde.hpp>
+#include <lfq.hpp>
 #include <host.hpp>
 #include <unistd.h>
 
@@ -84,3 +81,28 @@ class Config {
 };
 
 extern Config config;
+
+class Logger {
+  public:
+    Logger(const std::string& path);
+    ~Logger();
+
+    void broadcast(u32 id);
+    void deliver(u32 id, u32 host);
+
+  private:
+    struct Broadcast {
+        u32 id;
+    };
+    struct Deliver {
+        u32 id;
+        u32 host;
+    };
+
+    void loop();
+
+    LFQueue<std::variant<Broadcast, Deliver>> queue_;
+    std::fstream out_;
+    std::thread logThread_;
+    bool running_;
+};
