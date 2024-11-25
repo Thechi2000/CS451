@@ -8,6 +8,7 @@
 #include <thread>
 
 Config config = Config();
+Logger logger = Logger();
 
 bool Config::parseInternal() {
     if (!parseID()) {
@@ -209,13 +210,15 @@ void Config::trim(std::string &s) {
     rtrim(s);
 }
 
-Logger::Logger(const std::string &path)
-    : out_(path, std::ios_base::out | std::ios_base::trunc),
-      logThread_(&Logger::loop, this) {}
+Logger::Logger() : logThread_(&Logger::loop, this) {}
 Logger::~Logger() {
     running_ = false;
     logThread_.join();
     out_.flush();
+}
+
+void Logger::open() {
+    out_ = std::fstream(config.outputPath(), std::ios::out | std::ios::trunc);
 }
 
 void Logger::broadcast(u32 id) { queue_.enqueue(Broadcast{id}); }

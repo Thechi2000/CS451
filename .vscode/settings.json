@@ -7,6 +7,13 @@
   "files.associations": {
     "*.tpp": "cpp",
     "cstddef": "cpp",
-    "exception": "cpp"
+    "exception": "cpp",
+    "atomic": "cpp",
+    "*.tcc": "cpp",
+    "fstream": "cpp",
+    "ostream": "cpp",
+    "sstream": "cpp",
+    "locale": "cpp",
+    "variant": "cpp"
   }
 }

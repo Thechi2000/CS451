@@ -1,16 +1,16 @@
 #pragma once
 
 #include <cstddef>
-#include <string>
-#include <vector>
 #include <cstdlib>
 #include <cstring>
-#include <thread>
 #include <fstream>
+#include <string>
+#include <thread>
+#include <vector>
 
-#include <serde.hpp>
-#include <lfq.hpp>
 #include <host.hpp>
+#include <lfq.hpp>
+#include <serde.hpp>
 #include <unistd.h>
 
 class Config {
@@ -84,8 +84,10 @@ extern Config config;
 
 class Logger {
   public:
-    Logger(const std::string& path);
+    Logger();
     ~Logger();
+
+    void open();
 
     void broadcast(u32 id);
     void deliver(u32 id, u32 host);
@@ -106,3 +108,5 @@ class Logger {
     std::thread logThread_;
     bool running_;
 };
+
+extern Logger logger;

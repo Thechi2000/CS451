@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
     bool requireConfig = true;
 
     config.parse(argc, argv);
+    logger.open();
 
     std::cout << std::endl;
 
@@ -65,7 +66,6 @@ int main(int argc, char **argv) {
     std::cout << "Broadcasting and delivering messages...\n\n";
 
     FifoProxy<std::monostate> proxy(config.host());
-    Logger logger(config.outputPath());
 
     proxy.setCallback([&](const FifoProxy<std::monostate>::Message &msg) {
         logger.deliver(msg.content.order, msg.content.host);
