@@ -1,7 +1,6 @@
 #include "parser.hpp"
 #include <broadcast_proxy.hpp>
 #include <cstdlib>
-#include <iostream>
 #include <vector>
 
 static inline u64 id(u32 host, u32 order) {
@@ -28,7 +27,7 @@ deserialize(typename BroadcastProxy<std::monostate>::Payload &p, u8 *buff,
 }
 
 template <typename P>
-BroadcastProxy<P>::BroadcastProxy(const Host &host) : proxy_(host), order_(0) {
+BroadcastProxy<P>::BroadcastProxy(const Host &host) : proxy_(host), order_(1) {
     proxy_.setCallback([&](const Message &msg, const Host &host) {
         auto msg_id = id(msg.content.host, msg.content.order);
 
@@ -62,6 +61,20 @@ BroadcastProxy<P>::BroadcastProxy(const Host &host) : proxy_(host), order_(0) {
     });
 }
 
+template <typename P>
+void BroadcastProxy<P>::broadcast(const std::vector<P> &payloads) {
+    std::vector<Payload> p = std::vector<Payload>(payloads.size());
+
+    for (size_t i = 0; i < payloads.size(); i++) {
+        p[i] = {order_++, static_cast<u32>(config.id()), payloads[i]};
+        auto msg_id = id(p[i].host, p[i].order);
+        pending_.insert({msg_id, p[i]});
+    }
+
+    for (auto &host : config.hosts()) {
+        proxy_.send(p, host);
+    }
+}
 template <typename P> void BroadcastProxy<P>::broadcast(const P &payload) {
     Payload p = {order_++, static_cast<u32>(config.id()), payload};
     auto msg_id = id(p.host, p.order);

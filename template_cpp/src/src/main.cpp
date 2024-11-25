@@ -8,6 +8,7 @@
 #include <iostream>
 #include <signal.h>
 #include <variant>
+#include <vector>
 
 static void stop(int) {
     // reset signal handlers to default
@@ -74,10 +75,13 @@ int main(int argc, char **argv) {
     });
 
     try {
-        for (size_t i = 0; i < config.entries()[0].count; i++) {
+        std::vector<std::monostate> payloads(config.entries()[0].count);
+        proxy.broadcast(payloads);
+
+        for (size_t i = 1; i < config.entries()[0].count; i++) {
             out << "b " << i << "\n";
-            proxy.broadcast(std::monostate{});
         }
+
         proxy.wait();
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;

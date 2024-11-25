@@ -16,6 +16,7 @@ template <typename Payload> class FifoProxy {
 
     void setCallback(Callback cb) { callback_ = cb; }
 
+    void broadcast(const std::vector<Payload> &payloads);
     void broadcast(const Payload &payload);
 
     void wait() { proxy_.wait(); }

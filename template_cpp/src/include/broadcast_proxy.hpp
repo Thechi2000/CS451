@@ -21,6 +21,7 @@ template <typename P> class BroadcastProxy {
 
     void setCallback(Callback cb) { callback_ = cb; }
 
+    void broadcast(const std::vector<P> &payload);
     void broadcast(const P &payload);
 
     void wait() {proxy_.wait();}
