@@ -51,7 +51,7 @@ template <typename Payload> class Proxy {
     void innerSend(const std::vector<ToSend> &payloads, const Host &host);
 
     using Clock = std::chrono::system_clock;
-    const Clock::duration TIMEOUT = Clock::duration(100000000); // 100ms
+    const Clock::duration TIMEOUT = Clock::duration(10000000); // 10ms
 
     size_t serialize(const Message &msg, u8 *buff);
     size_t serialize(const Ack &ack, u8 *buff);

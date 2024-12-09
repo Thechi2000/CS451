@@ -52,7 +52,8 @@ BroadcastProxy<P>::BroadcastProxy(const Host &host) : proxy_(host), order_(1) {
                 }
             }
 
-            if (acked_count == config.hosts().size()) {
+            if (static_cast<float>(acked_count) >
+                static_cast<float>(config.hosts().size()) / 2.0f) {
                 callback_(msg);
                 ack_.erase(msg_id);
                 pending_.erase(msg_id);

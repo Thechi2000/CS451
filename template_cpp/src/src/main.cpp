@@ -78,9 +78,10 @@ int main(int argc, char **argv) {
         std::vector<std::monostate> payloads(config.entries()[0].count);
         proxy.broadcast(payloads);
 
-        for (size_t i = 1; i < config.entries()[0].count; i++) {
+        for (size_t i = 1; i <= config.entries()[0].count; i++) {
             out << "b " << i << "\n";
         }
+        out.flush();
 
         proxy.wait();
     } catch (const std::exception &e) {
