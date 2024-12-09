@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,10 @@ class Parser {
 
     unsigned long receiverId() const { return receiverId_; }
     unsigned long id() const { return id_; }
+
+    uint32_t f() const {
+        return static_cast<uint32_t>(hosts_.size() / 2 - hosts_.size() % 2);
+    }
 
     const char *hostsPath() const { return hostsPath_.c_str(); }
 
