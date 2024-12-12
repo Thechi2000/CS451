@@ -99,6 +99,55 @@ template <typename Payload> void Proxy<Payload>::wait() {
     }
 }
 
+template <typename Payload> void Proxy<Payload>::poll() {
+    u8 buffer[UDP_PACKET_MAX_SIZE] = {0};
+
+    Host host;
+    std::optional<Message> msg = std::nullopt;
+    if (Clock::now() - lastSend_ > TIMEOUT) {
+        for (size_t hostIdx = 0; hostIdx < config.hosts().size(); hostIdx++) {
+            if (sent_[hostIdx].size() == 0) {
+                continue;
+            }
+
+            std::vector<ToSend> messages(sent_[hostIdx].size());
+
+            size_t i = 0;
+            for (const auto &entry : sent_[hostIdx]) {
+                messages[i] = entry.second;
+                i++;
+            }
+
+            innerSend(messages, config.host(hostIdx + 1));
+        }
+        lastSend_ = Clock::now();
+    }
+
+    size_t size = socket.recvFrom(buffer, UDP_PACKET_MAX_SIZE, host);
+    size_t processedBytes = 0;
+
+    if (size > 0) {
+        u8 acks[8 * ACK_SIZE];
+        size_t acksSize = 0;
+
+        host.id = static_cast<u32>(std::find_if(config.hosts().begin(),
+                                                config.hosts().end(),
+                                                [&](const Host &e) {
+                                                    return e.ip == host.ip &&
+                                                           e.port == host.port;
+                                                }) -
+                                   config.hosts().begin()) +
+                  1;
+
+        while (size > processedBytes) {
+            processedBytes += handleMessage(buffer + processedBytes, host,
+                                            acks + acksSize, acksSize);
+        }
+
+        socket.sendTo(acks, acksSize, host);
+    }
+}
+
 template <typename Payload>
 void Proxy<Payload>::innerSend(const std::vector<ToSend> &payloads,
                                const Host &host) {

@@ -105,7 +105,11 @@ class Agreement {
 
     void setCallback(Callback cb) { cb_ = cb; }
 
-    void wait() { proxy_.wait(); }
+    void wait() {
+        while (true) {
+            proxy_.poll();
+        }
+    }
 
   private:
     Proxy proxy_;

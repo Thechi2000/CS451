@@ -29,6 +29,7 @@ template <typename Payload> class Proxy {
     void setCallback(Callback cb) { callback_ = cb; }
 
     void wait();
+    void poll();
 
   private:
     struct ToSend {
