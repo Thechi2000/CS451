@@ -1,6 +1,7 @@
 #pragma once
 
 #include "broadcast_proxy.hpp"
+#include "parser.hpp"
 #include "serde.hpp"
 
 #include <iostream>
@@ -26,68 +27,64 @@ class Agreement {
     };
 
     using Callback = std::function<void(const std::set<u32> &)>;
-    struct Payload {
-        Type type;
+    struct ProposalPayload {
         u32 proposalNumber;
-        std::set<u32> proposedValue; // empty if nack
+        std::set<u32> proposedValue;
     };
-    using Proxy = BroadcastProxy<Payload>;
+    using BroadcastProxy = BroadcastProxy<ProposalPayload>;
 
-    Agreement(const Host &host) : proxy_(host) {
-        proxy_.setCallback([&](const Proxy::Message &p) {
+    struct AckPayload {
+        u32 proposalNumber;
+        std::set<u32> proposedValue_; // Empty for ACK
+    };
+    using P2PProxy = Proxy<AckPayload>;
+
+    Agreement(const Host &host) : broadcast_(host), p2p_(host) {
+        broadcast_.setCallback([&](const BroadcastProxy::Message &p) {
             const auto &msg = p.content.payload;
 
-            /*  std::cout << static_cast<u32>(msg.type) << " ("
-                       << msg.proposalNumber << "): " << msg.proposedValue
-                       << std::endl; */
+            bool contained = true;
+            for (auto &v : proposedValue_) {
+                if (msg.proposedValue.count(v) == 0) {
+                    contained = false;
+                    break;
+                }
+            }
 
-            switch (msg.type) {
-            case PROPOSAL: {
-                bool contained = true;
-                for (auto &v : proposedValue_) {
-                    if (msg.proposedValue.count(v) == 0) {
-                        contained = false;
-                        break;
-                    }
+            std::cout << proposedValue_ << " in " << msg.proposedValue << ": "
+                      << contained << std::endl;
+
+            if (contained) {
+                acceptedValue_ = msg.proposedValue;
+                AckPayload toSend = {activeProposalNumber_, {}};
+                p2p_.send(toSend, config.host(p.content.host));
+            } else {
+                for (auto v : msg.proposedValue) {
+                    acceptedValue_.insert(v);
                 }
 
-                std::cout << proposedValue_ << " in " << msg.proposedValue
-                          << ": " << contained << std::endl;
-
-                if (contained) {
-                    acceptedValue_ = msg.proposedValue;
-                    Payload p = {NACK, activeProposalNumber_, {}};
-                    proxy_.broadcast(p);
-                } else {
-                    for (auto v : msg.proposedValue) {
-                        acceptedValue_.insert(v);
-                    }
-
-                    Payload p = {ACK, activeProposalNumber_, acceptedValue_};
-                    proxy_.broadcast(p);
-                }
-                break;
-            }
-            case ACK: {
-                if (msg.proposalNumber == activeProposalNumber_) {
-                    ackCount_++;
-                }
-                break;
-            }
-            case NACK: {
-                if (msg.proposalNumber == activeProposalNumber_) {
-                    nackCount_++;
-                }
-                break;
-            }
-            default: {
-                std::cerr << "Invalid type: " << static_cast<u32>(msg.type)
-                          << std::endl;
-                break;
-            }
+                AckPayload toSend = {activeProposalNumber_, acceptedValue_};
+                p2p_.send(toSend, config.host(p.content.host));
             }
 
             checkRebroadcast();
+            checkTrigger();
+        });
+
+        p2p_.setCallback([&](const P2PProxy::Message &p, const Host &) {
+            if (p.content.proposalNumber != activeProposalNumber_) {
+                return;
+            }
+
+            if (p.content.proposedValue_.empty()) {
+                ackCount_++;
+            } else {
+                for (const auto &it : p.content.proposedValue_) {
+                    proposedValue_.insert(it);
+                }
+                nackCount_++;
+            }
+
             checkTrigger();
         });
     }
@@ -99,20 +96,22 @@ class Agreement {
         ackCount_ = 0;
         nackCount_ = 0;
 
-        Payload p = {PROPOSAL, activeProposalNumber_, proposedValue_};
-        proxy_.broadcast(p);
+        ProposalPayload p = {activeProposalNumber_, proposedValue_};
+        broadcast_.broadcast(p);
     }
 
     void setCallback(Callback cb) { cb_ = cb; }
 
     void wait() {
         while (true) {
-            proxy_.poll();
+            broadcast_.poll();
+            p2p_.poll();
         }
     }
 
   private:
-    Proxy proxy_;
+    BroadcastProxy broadcast_;
+    P2PProxy p2p_;
     Callback cb_;
 
     bool active_ = false;
@@ -132,8 +131,8 @@ class Agreement {
             ackCount_ = 0;
             nackCount_ = 0;
 
-            Payload p = {PROPOSAL, activeProposalNumber_, proposedValue_};
-            proxy_.broadcast(p);
+            ProposalPayload p = {activeProposalNumber_, proposedValue_};
+            broadcast_.broadcast(p);
         }
     }
 
@@ -146,8 +145,8 @@ class Agreement {
     }
 };
 
-static inline u8 *ser(const Agreement::Payload &p, u8 *buff, size_t &s) {
-    buff = write_byte(buff, p.type);
+static inline u8 *ser(const Agreement::ProposalPayload &p, u8 *buff,
+                      size_t &s) {
     buff = write_u32(buff, p.proposalNumber);
     buff = write_u32(buff, static_cast<u32>(p.proposedValue.size()));
 
@@ -155,16 +154,13 @@ static inline u8 *ser(const Agreement::Payload &p, u8 *buff, size_t &s) {
         buff = write_u32(buff, v);
     }
 
-    s += sizeof(u32) * (p.proposedValue.size() + 2) + sizeof(u8);
+    s += sizeof(u32) * (p.proposedValue.size() + 2);
 
     return buff;
 }
 
-static inline u8 *deserialize(Agreement::Payload &p, u8 *buff, size_t &s) {
-    u8 type;
-    buff = read_byte(buff, type);
-    p.type = static_cast<Agreement::Type>(type);
-
+static inline u8 *deserialize(Agreement::ProposalPayload &p, u8 *buff,
+                              size_t &s) {
     buff = read_u32(buff, p.proposalNumber);
 
     u32 size;
@@ -176,14 +172,14 @@ static inline u8 *deserialize(Agreement::Payload &p, u8 *buff, size_t &s) {
         p.proposedValue.insert(v);
     }
 
-    s += sizeof(u32) * (size + 2) + sizeof(u8);
+    s += sizeof(u32) * (size + 2);
 
     return buff;
 }
 
 static inline u8 *
-ser(const typename BroadcastProxy<Agreement::Payload>::Payload &p, u8 *buff,
-    size_t &s) {
+ser(const typename BroadcastProxy<Agreement::ProposalPayload>::Payload &p,
+    u8 *buff, size_t &s) {
     s += 8;
     buff = write_u32(buff, p.host);
     if (buff[3] == 18)
@@ -193,8 +189,8 @@ ser(const typename BroadcastProxy<Agreement::Payload>::Payload &p, u8 *buff,
 }
 
 static inline u8 *
-deserialize(typename BroadcastProxy<Agreement::Payload>::Payload &p, u8 *buff,
-            size_t &s) {
+deserialize(typename BroadcastProxy<Agreement::ProposalPayload>::Payload &p,
+            u8 *buff, size_t &s) {
     s += 8;
     buff = read_u32(buff, p.host);
     buff = read_u32(buff, p.order);
