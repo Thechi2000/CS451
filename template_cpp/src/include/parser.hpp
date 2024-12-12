@@ -38,8 +38,9 @@ class Parser {
     unsigned long receiverId() const { return receiverId_; }
     unsigned long id() const { return id_; }
 
-    uint32_t f() const {
-        return static_cast<uint32_t>(hosts_.size() / 2 - hosts_.size() % 2);
+    float f() const {
+        float s = static_cast<float>(hosts_.size());
+        return (s - 1) / 2;
     }
 
     const char *hostsPath() const { return hostsPath_.c_str(); }

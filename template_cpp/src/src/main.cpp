@@ -1,14 +1,14 @@
+#include <cmath>
 #include <exception>
 #include <fstream>
 #include <ios>
 #include <iostream>
 
+#include "agreement.hpp"
 #include "parser.hpp"
-#include <frb.hpp>
+#include "serde.hpp"
 #include <iostream>
 #include <signal.h>
-#include <variant>
-#include <vector>
 
 static void stop(int) {
     // reset signal handlers to default
@@ -64,26 +64,37 @@ int main(int argc, char **argv) {
 
     std::cout << "Broadcasting and delivering messages...\n\n";
 
-    FifoProxy<std::monostate> proxy(config.host());
+    Agreement agreement(config.host());
 
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
 
-    proxy.setCallback([&](const FifoProxy<std::monostate>::Message &msg) {
-        out << "d " << msg.content.host << " " << msg.content.order << "\n";
-        out.flush();
+    agreement.setCallback([&](const std::set<u32> &proposal) {
+        std::cout << "Decided " << proposal << std::endl;
     });
 
     try {
-        std::vector<std::monostate> payloads(config.entries()[0].count);
-        proxy.broadcast(payloads);
-
-        for (size_t i = 1; i <= config.entries()[0].count; i++) {
-            out << "b " << i << "\n";
+        switch (config.id()) {
+        case 1: {
+            std::set<u32> proposal = {1, 2, 3};
+            agreement.propose(proposal);
+            break;
         }
-        out.flush();
+        case 2: {
+            std::set<u32> proposal = {3, 5};
+            agreement.propose(proposal);
+            break;
+        }
+        case 3: {
+            std::set<u32> proposal = {1, 3, 4, 6};
+            agreement.propose(proposal);
+            break;
+        }
+        default:
+            break;
+        }
 
-        proxy.wait();
+        agreement.wait();
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(-1);
