@@ -46,6 +46,7 @@ UdpSocket::UdpSocket(const Host &host) {
     // Bind the socket to the address
     if (bind(fd, reinterpret_cast<struct sockaddr *>(&server), sizeof(server)) <
         0) {
+        perror("Could not bind");
         throw UdpException(UdpException::Type::BIND);
     }
 }

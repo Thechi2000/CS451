@@ -31,7 +31,7 @@ class Agreement {
         u32 proposalNumber;
         std::set<u32> proposedValue;
     };
-    using BroadcastProxy = BroadcastProxy<ProposalPayload>;
+    using BP = BroadcastProxy<ProposalPayload>;
 
     struct AckPayload {
         u32 proposalNumber;
@@ -40,7 +40,7 @@ class Agreement {
     using P2PProxy = Proxy<AckPayload>;
 
     Agreement(const Host &host) : broadcast_(host), p2p_(host) {
-        broadcast_.setCallback([&](const BroadcastProxy::Message &p) {
+        broadcast_.setCallback([&](const BP::Message &p) {
             const auto &msg = p.content.payload;
 
             bool contained = true;
@@ -110,7 +110,7 @@ class Agreement {
     }
 
   private:
-    BroadcastProxy broadcast_;
+    BP broadcast_;
     P2PProxy p2p_;
     Callback cb_;
 
@@ -195,4 +195,34 @@ deserialize(typename BroadcastProxy<Agreement::ProposalPayload>::Payload &p,
     buff = read_u32(buff, p.host);
     buff = read_u32(buff, p.order);
     return deserialize(p.payload, buff, s);
+}
+
+static inline u8 *ser(const Agreement::AckPayload &p, u8 *buff, size_t &s) {
+    buff = write_u32(buff, p.proposalNumber);
+    buff = write_u32(buff, static_cast<u32>(p.proposedValue_.size()));
+
+    for (auto &v : p.proposedValue_) {
+        buff = write_u32(buff, v);
+    }
+
+    s += sizeof(u32) * (p.proposedValue_.size() + 2);
+
+    return buff;
+}
+
+static inline u8 *deserialize(Agreement::AckPayload &p, u8 *buff, size_t &s) {
+    buff = read_u32(buff, p.proposalNumber);
+
+    u32 size;
+    buff = read_u32(buff, size);
+
+    for (u32 i = 0; i < size; i++) {
+        u32 v;
+        buff = read_u32(buff, v);
+        p.proposedValue_.insert(v);
+    }
+
+    s += sizeof(u32) * (size + 2);
+
+    return buff;
 }
