@@ -1,4 +1,5 @@
 #include "parser.hpp"
+#include "serde.hpp"
 #include <broadcast_proxy.hpp>
 #include <cstdlib>
 #include <vector>
@@ -9,7 +10,8 @@ static inline u64 id(u32 host, u32 order) {
 
 static inline u8 *ser(const typename BroadcastProxy<std::monostate>::Payload &p,
                       u8 *buff, size_t &s) {
-    s += 8;
+    s += 9;
+    buff = write_byte(buff, static_cast<u8>(p.isBroadcasted));
     buff = write_u32(buff, p.host);
     if (buff[3] == 18)
         abort();
@@ -20,7 +22,12 @@ static inline u8 *ser(const typename BroadcastProxy<std::monostate>::Payload &p,
 static inline u8 *
 deserialize(typename BroadcastProxy<std::monostate>::Payload &p, u8 *buff,
             size_t &s) {
-    s += 8;
+    s += 9;
+
+    u8 isBroadcasted;
+    buff = read_byte(buff, isBroadcasted);
+    p.isBroadcasted = static_cast<bool>(buff);
+
     buff = read_u32(buff, p.host);
     buff = read_u32(buff, p.order);
     return buff;
@@ -30,6 +37,11 @@ template <typename P>
 BroadcastProxy<P>::BroadcastProxy(const Host &host) : proxy_(host), order_(1) {
     proxy_.setCallback([&](const Message &msg, const Host &host) {
         auto msg_id = id(msg.content.host, msg.content.order);
+
+        if (!msg.content.isBroadcasted) {
+            p2pCallback_(msg, host);
+            return;
+        }
 
         if (delivered_.count(msg_id) == 0) {
             if (ack_.count(msg_id) == 0) {
@@ -54,7 +66,7 @@ BroadcastProxy<P>::BroadcastProxy(const Host &host) : proxy_(host), order_(1) {
 
             if (static_cast<float>(acked_count) >
                 static_cast<float>(config.hosts().size()) / 2.0f) {
-                callback_(msg);
+                broadcastCallback_(msg);
                 ack_.erase(msg_id);
                 pending_.erase(msg_id);
             }
@@ -67,7 +79,7 @@ void BroadcastProxy<P>::broadcast(const std::vector<P> &payloads) {
     std::vector<Payload> p = std::vector<Payload>(payloads.size());
 
     for (size_t i = 0; i < payloads.size(); i++) {
-        p[i] = {order_++, static_cast<u32>(config.id()), payloads[i]};
+        p[i] = {true, order_++, static_cast<u32>(config.id()), payloads[i]};
         auto msg_id = id(p[i].host, p[i].order);
         pending_.insert({msg_id, p[i]});
     }
@@ -77,11 +89,17 @@ void BroadcastProxy<P>::broadcast(const std::vector<P> &payloads) {
     }
 }
 template <typename P> void BroadcastProxy<P>::broadcast(const P &payload) {
-    Payload p = {order_++, static_cast<u32>(config.id()), payload};
+    Payload p = {true, order_++, static_cast<u32>(config.id()), payload};
     auto msg_id = id(p.host, p.order);
     pending_.insert({msg_id, p});
 
     for (auto &host : config.hosts()) {
         proxy_.send(p, host);
     }
+}
+
+template <typename P>
+void BroadcastProxy<P>::send(const P &payload, const Host &host) {
+    Payload p = {false, order_++, static_cast<u32>(config.id()), payload};
+    proxy_.send(p, host);
 }

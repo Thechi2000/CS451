@@ -8,6 +8,7 @@
 template <typename P> class BroadcastProxy {
   public:
     using Payload = struct {
+        bool isBroadcasted;
         u32 order;
         u32 host;
         P payload;
@@ -17,15 +18,19 @@ template <typename P> class BroadcastProxy {
 
     BroadcastProxy(const Host &host);
 
-    using Callback = std::function<void(const Message &msg)>;
+    using BroadcastCallback = std::function<void(const Message &)>;
+    using P2PCallback = std::function<void(const Message &, const Host &)>;
 
-    void setCallback(Callback cb) { callback_ = cb; }
+    void setBroadcastCallback(BroadcastCallback cb) { broadcastCallback_ = cb; }
+    void setP2PCallback(P2PCallback cb) { p2pCallback_ = cb; }
 
     void broadcast(const std::vector<P> &payload);
     void broadcast(const P &payload);
 
-    void wait() {proxy_.wait();}
-    void poll() {proxy_.poll();}
+    void send(const P &payload, const Host &host);
+
+    void wait() { proxy_.wait(); }
+    void poll() { proxy_.poll(); }
 
   private:
     _Proxy proxy_;
@@ -34,7 +39,8 @@ template <typename P> class BroadcastProxy {
     std::map<u64, Payload> pending_;
     std::set<u64> delivered_;
 
-    Callback callback_;
+    BroadcastCallback broadcastCallback_;
+    P2PCallback p2pCallback_;
 
     uint32_t order_;
 };
