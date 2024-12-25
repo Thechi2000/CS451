@@ -29,10 +29,6 @@ int main(int argc, char **argv) {
     signal(SIGTERM, stop);
     signal(SIGINT, stop);
 
-    // `true` means that a config file is required.
-    // Call with `false` if no config file is necessary.
-    bool requireConfig = true;
-
     config.parse(argc, argv);
 
     std::cout << std::endl;
@@ -64,30 +60,31 @@ int main(int argc, char **argv) {
 
     std::cout << "Broadcasting and delivering messages...\n\n";
 
-    Agreement agreement(config.host());
+    Agreement agreement(config.host(), 2);
 
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
 
-    agreement.setCallback([&](const std::set<u32> &proposal) {
-        std::cout << "Decided " << proposal << std::endl;
+    agreement.setCallback([&](u32 lattice_idx, const std::set<u32> &proposal) {
+        std::cout << "[" << lattice_idx << "] Decided " << proposal
+                  << std::endl;
     });
 
     try {
         switch (config.id()) {
         case 1: {
-            std::set<u32> proposal = {1, 2, 3};
-            agreement.propose(proposal);
+            agreement.propose({1, 2, 3}, 0);
+            agreement.propose({1, 3}, 1);
             break;
         }
         case 2: {
-            std::set<u32> proposal = {3, 5};
-            agreement.propose(proposal);
+            agreement.propose({3, 5}, 0);
+            agreement.propose({2, 4}, 1);
             break;
         }
         case 3: {
-            std::set<u32> proposal = {1, 3, 4, 6};
-            agreement.propose(proposal);
+            agreement.propose({1, 3, 4, 6}, 0);
+            agreement.propose({1, 4}, 1);
             break;
         }
         default:
