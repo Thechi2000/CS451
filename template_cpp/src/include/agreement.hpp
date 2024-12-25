@@ -6,7 +6,6 @@
 
 #include <iostream>
 #include <set>
-#include <string>
 
 static inline std::ostream &operator<<(std::ostream &os,
                                        const std::set<u32> &set) {
@@ -38,9 +37,11 @@ class Agreement {
         broadcast_.setBroadcastCallback([&](const BP::Message &p) {
             const auto &msg = p.content.payload;
 
-            std::cout << "[" << p.seq << "] Received proposal "
-                      << msg.proposalNumber << " (" << msg.proposedValue << ")"
-                      << std::endl;
+#ifdef LOGGING
+            std::cout << "[" << p.content.order << ", " << p.content.host
+                      << "] Received proposal " << msg.proposalNumber << " ("
+                      << msg.proposedValue << ")" << std::endl;
+#endif
 
             bool contained = true;
             for (auto &v : acceptedValue_) {
@@ -50,28 +51,41 @@ class Agreement {
                 }
             }
 
-            std::cout << "[" << p.seq << "] " << acceptedValue_ << " ⊆ "
-                      << msg.proposedValue << ": "
-                      << (contained ? "true" : "false") << std::endl;
+#ifdef LOGGING
+            std::cout << "[" << p.content.order << ", " << p.content.host
+                      << "] " << acceptedValue_ << " ⊆ " << msg.proposedValue
+                      << ": " << (contained ? "true" : "false") << std::endl;
+#endif
 
             if (contained) {
                 acceptedValue_ = msg.proposedValue;
-                std::cout << "[" << p.seq << "] Updating accepted value to "
-                          << acceptedValue_ << std::endl;
+#ifdef LOGGING
+                std::cout << "[" << p.content.order << ", " << p.content.host
+                          << "] Updating accepted value to " << acceptedValue_
+                          << std::endl;
+#endif
 
                 Payload toSend = {msg.proposalNumber, {}};
-                std::cout << "[" << p.seq << "] Responding with ACK"
-                          << std::endl;
+#ifdef LOGGING
+                std::cout << "[" << p.content.order << ", " << p.content.host
+                          << "] Responding with ACK" << std::endl;
+#endif
                 broadcast_.send(toSend, config.host(p.content.host));
             } else {
                 for (auto v : msg.proposedValue) {
                     acceptedValue_.insert(v);
                 }
-                std::cout << "[" << p.seq << "] Updating accepted value to "
-                          << acceptedValue_ << std::endl;
+#ifdef LOGGING
+                std::cout << "[" << p.content.order << ", " << p.content.host
+                          << "] Updating accepted value to " << acceptedValue_
+                          << std::endl;
+#endif
 
-                std::cout << "[" << p.seq << "] Responding with NACK ("
-                          << acceptedValue_ << ")" << std::endl;
+#ifdef LOGGING
+                std::cout << "[" << p.content.order << ", " << p.content.host
+                          << "] Responding with NACK (" << acceptedValue_ << ")"
+                          << std::endl;
+#endif
 
                 Payload toSend = {activeProposalNumber_, acceptedValue_};
                 broadcast_.send(toSend, config.host(p.content.host));
@@ -81,15 +95,22 @@ class Agreement {
             checkTrigger();
         });
 
-        broadcast_.setP2PCallback([&](const BP::Message &p, const Host &host) {
+        broadcast_.setP2PCallback([&](const BP::Message &p, const Host &
+#ifdef LOGGING
+                                                                host
+#endif
+
+                                  ) {
             // Messages received through P2P are always acks.
             const auto &msg = p.content.payload;
 
+#ifdef LOGGING
             std::cout << "Received "
                       << (msg.proposedValue.empty() ? "ACK" : "NACK")
                       << " from host " << host.id << " for proposal "
                       << msg.proposalNumber << " (" << msg.proposedValue << ")"
                       << std::endl;
+#endif
 
             if (msg.proposalNumber != activeProposalNumber_) {
                 return;
@@ -118,8 +139,10 @@ class Agreement {
 
         Payload p = {activeProposalNumber_, proposedValue_};
 
+#ifdef LOGGING
         std::cout << "Broadcasting " << p.proposalNumber << " ("
                   << p.proposedValue << ")" << std::endl;
+#endif
 
         broadcast_.broadcast(p);
     }
@@ -149,8 +172,10 @@ class Agreement {
 
             Payload p = {activeProposalNumber_, proposedValue_};
 
+#ifdef LOGGING
             std::cout << "Broadcasting " << p.proposalNumber << " ("
                       << p.proposedValue << ")" << std::endl;
+#endif
 
             broadcast_.broadcast(p);
         }
