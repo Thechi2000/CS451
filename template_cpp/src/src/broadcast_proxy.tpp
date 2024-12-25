@@ -26,7 +26,7 @@ deserialize(typename BroadcastProxy<std::monostate>::Payload &p, u8 *buff,
 
     u8 isBroadcasted;
     buff = read_byte(buff, isBroadcasted);
-    p.isBroadcasted = static_cast<bool>(buff);
+    p.isBroadcasted = static_cast<bool>(isBroadcasted);
 
     buff = read_u32(buff, p.host);
     buff = read_u32(buff, p.order);

@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <set>
+#include <string>
 
 static inline std::ostream &operator<<(std::ostream &os,
                                        const std::set<u32> &set) {
@@ -37,28 +38,40 @@ class Agreement {
         broadcast_.setBroadcastCallback([&](const BP::Message &p) {
             const auto &msg = p.content.payload;
 
-            std::cout << "Received proposal " << msg.proposalNumber << " ("
-                      << msg.proposedValue << ")" << std::endl;
+            std::cout << "[" << p.seq << "] Received proposal "
+                      << msg.proposalNumber << " (" << msg.proposedValue << ")"
+                      << std::endl;
 
             bool contained = true;
-            for (auto &v : proposedValue_) {
+            for (auto &v : acceptedValue_) {
                 if (msg.proposedValue.count(v) == 0) {
                     contained = false;
                     break;
                 }
             }
 
-            std::cout << proposedValue_ << " in " << msg.proposedValue << ": "
-                      << contained << std::endl;
+            std::cout << "[" << p.seq << "] " << acceptedValue_ << " ⊆ "
+                      << msg.proposedValue << ": "
+                      << (contained ? "true" : "false") << std::endl;
 
             if (contained) {
                 acceptedValue_ = msg.proposedValue;
-                Payload toSend = {activeProposalNumber_, {}};
+                std::cout << "[" << p.seq << "] Updating accepted value to "
+                          << acceptedValue_ << std::endl;
+
+                Payload toSend = {msg.proposalNumber, {}};
+                std::cout << "[" << p.seq << "] Responding with ACK"
+                          << std::endl;
                 broadcast_.send(toSend, config.host(p.content.host));
             } else {
                 for (auto v : msg.proposedValue) {
                     acceptedValue_.insert(v);
                 }
+                std::cout << "[" << p.seq << "] Updating accepted value to "
+                          << acceptedValue_ << std::endl;
+
+                std::cout << "[" << p.seq << "] Responding with NACK ("
+                          << acceptedValue_ << ")" << std::endl;
 
                 Payload toSend = {activeProposalNumber_, acceptedValue_};
                 broadcast_.send(toSend, config.host(p.content.host));
@@ -92,6 +105,7 @@ class Agreement {
             }
 
             checkRebroadcast();
+            checkTrigger();
         });
     }
 
@@ -126,9 +140,6 @@ class Agreement {
     std::set<u32> acceptedValue_ = {};
 
     void checkRebroadcast() {
-        std::cout << ackCount_ << " acks and " << nackCount_ << " nacks"
-                  << std::endl;
-
         if (nackCount_ > 0 &&
             static_cast<float>(ackCount_ + nackCount_) >= config.f() + 1 &&
             active_) {
@@ -187,7 +198,8 @@ static inline u8 *deserialize(Agreement::Payload &p, u8 *buff, size_t &s) {
 static inline u8 *
 ser(const typename BroadcastProxy<Agreement::Payload>::Payload &p, u8 *buff,
     size_t &s) {
-    s += 8;
+    s += 9;
+    buff = write_byte(buff, static_cast<u8>(p.isBroadcasted));
     buff = write_u32(buff, p.host);
     if (buff[3] == 18)
         abort();
@@ -198,7 +210,12 @@ ser(const typename BroadcastProxy<Agreement::Payload>::Payload &p, u8 *buff,
 static inline u8 *
 deserialize(typename BroadcastProxy<Agreement::Payload>::Payload &p, u8 *buff,
             size_t &s) {
-    s += 8;
+    s += 9;
+
+    u8 isBroadcasted;
+    buff = read_byte(buff, isBroadcasted);
+    p.isBroadcasted = static_cast<bool>(isBroadcasted);
+
     buff = read_u32(buff, p.host);
     buff = read_u32(buff, p.order);
     return deserialize(p.payload, buff, s);
