@@ -1,24 +1,23 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <string>
-#include <vector>
-
-#include <cctype>
-
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 
+#include <cctype>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <host.hpp>
-#include <unistd.h>
+#include <serde.hpp>
+#include <set>
+#include <string>
+#include <vector>
 
 class Parser {
-  public:
+   public:
     Parser() {}
 
     struct ConfigEntry {
@@ -56,7 +55,9 @@ class Parser {
     const Host &host(size_t i) { return hosts_[i - 1]; }
     const Host &host() { return hosts_[id_ - 1]; }
 
-  private:
+    const std::vector<std::set<u32>>& proposals() const { return proposals_; }
+
+   private:
     bool parseInternal();
 
     void parseHosts();
@@ -75,7 +76,7 @@ class Parser {
     void rtrim(std::string &s);
     void trim(std::string &s);
 
-  private:
+   private:
     int argc_;
     char **argv_;
 
@@ -84,6 +85,8 @@ class Parser {
     std::string hostsPath_;
     std::string outputPath_;
     std::string configPath_;
+
+    std::vector<std::set<u32>> proposals_;
 
     std::vector<Host> hosts_;
     std::vector<ConfigEntry> entries_;

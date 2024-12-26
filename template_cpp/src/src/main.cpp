@@ -1,3 +1,5 @@
+#include <signal.h>
+
 #include <cmath>
 #include <exception>
 #include <fstream>
@@ -7,8 +9,6 @@
 #include "agreement.hpp"
 #include "parser.hpp"
 #include "serde.hpp"
-#include <iostream>
-#include <signal.h>
 
 static void stop(int) {
     // reset signal handlers to default
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Broadcasting and delivering messages...\n\n";
 
-    Agreement agreement(config.host(), 2);
+    Agreement agreement(config.host(), config.proposals().size());
 
     std::fstream out(config.outputPath(),
                      std::ios_base::out | std::ios_base::trunc);
@@ -71,24 +71,8 @@ int main(int argc, char **argv) {
     });
 
     try {
-        switch (config.id()) {
-        case 1: {
-            agreement.propose({1, 2, 3}, 0);
-            agreement.propose({1, 3}, 1);
-            break;
-        }
-        case 2: {
-            agreement.propose({3, 5}, 0);
-            agreement.propose({2, 4}, 1);
-            break;
-        }
-        case 3: {
-            agreement.propose({1, 3, 4, 6}, 0);
-            agreement.propose({1, 4}, 1);
-            break;
-        }
-        default:
-            break;
+        for (size_t i = 0; i < config.proposals().size(); ++i) {
+            agreement.propose(config.proposals()[i], static_cast<u32>(i));
         }
 
         agreement.wait();

@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <parser.hpp>
@@ -33,7 +32,6 @@ bool Parser::parseInternal() {
 }
 
 void Parser::parseHosts() {
-
     std::ifstream hostsFile(hostsPath());
     std::vector<Host> hosts;
 
@@ -98,23 +96,30 @@ void Parser::parseHosts() {
 void Parser::parseConfig() {
     std::fstream input(configPath_);
 
-    while (true) {
-        std::string line;
+    std::string line;
+    std::getline(input, line);
+
+    size_t first_delim = line.find_first_of(' ');
+    size_t second_delim = line.find(' ', first_delim + 1);
+
+    size_t p = static_cast<size_t>(std::stoi(line.substr(0, first_delim)));
+    size_t vs = static_cast<size_t>(
+        std::stoi(line.substr(first_delim + 1, second_delim - first_delim)));
+    size_t ds = static_cast<size_t>(std::stoi(line.substr(second_delim + 1)));
+
+    for (size_t i = 0; i < p; ++i) {
         std::getline(input, line);
 
-        if (line.empty()) {
-            break;
+        std::istringstream iss(line);
+        std::set<u32> numbers;
+        u32 num;
+
+        // Parse integers using the stream
+        while (iss >> num) {
+            numbers.insert(num);
         }
 
-        long delim = static_cast<long>(line.find_first_of(' '));
-        auto entry = delim != -1 ? ConfigEntry{
-            static_cast<size_t>(
-                std::stoi(std::string(line.begin() + delim + 1, line.end()))),
-            static_cast<size_t>(
-                std::stoi(std::string(line.begin(), line.begin() + delim))),
-        }: ConfigEntry{SIZE_MAX, static_cast<size_t>(std::stoi(line))};
-        receiverId_ = entry.id;
-        entries_.push_back(entry);
+        proposals_.push_back(numbers);
     }
 }
 
