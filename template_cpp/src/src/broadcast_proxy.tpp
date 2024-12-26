@@ -1,8 +1,9 @@
-#include "parser.hpp"
-#include "serde.hpp"
 #include <broadcast_proxy.hpp>
 #include <cstdlib>
 #include <vector>
+
+#include "parser.hpp"
+#include "serde.hpp"
 
 static inline u64 id(u32 host, u32 order) {
     return (static_cast<u64>(host) << 32) | order;
@@ -13,15 +14,12 @@ static inline u8 *ser(const typename BroadcastProxy<std::monostate>::Payload &p,
     s += 9;
     buff = write_byte(buff, static_cast<u8>(p.isBroadcasted));
     buff = write_u32(buff, p.host);
-    if (buff[3] == 18)
-        abort();
     buff = write_u32(buff, p.order);
     return buff;
 }
 
-static inline u8 *
-deserialize(typename BroadcastProxy<std::monostate>::Payload &p, u8 *buff,
-            size_t &s) {
+static inline u8 *deserialize(
+    typename BroadcastProxy<std::monostate>::Payload &p, u8 *buff, size_t &s) {
     s += 9;
 
     u8 isBroadcasted;
@@ -89,7 +87,8 @@ void BroadcastProxy<P>::broadcast(const std::vector<P> &payloads) {
         proxy_.send(p, host);
     }
 }
-template <typename P> void BroadcastProxy<P>::broadcast(const P &payload) {
+template <typename P>
+void BroadcastProxy<P>::broadcast(const P &payload) {
     Payload p = {true, order_++, static_cast<u32>(config.id()), payload};
     auto msg_id = id(p.host, p.order);
     pending_.insert({msg_id, p});

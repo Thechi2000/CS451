@@ -1,26 +1,27 @@
-#include <cerrno>
-#include <cstdio>
 #include <fcntl.h>
 #include <strings.h>
 #include <sys/socket.h>
-#include <udp.hpp>
 #include <unistd.h>
+
+#include <cerrno>
+#include <cstdio>
+#include <udp.hpp>
 
 UdpException::UdpException(UdpException::Type t) : t(t) {}
 const char *UdpException::what() const noexcept {
     switch (t) {
-    case Type::OPT:
-        return "UDP ERROR: Cannot change flags";
-    case Type::BIND:
-        return "UDP ERROR: Cannot bind";
-    case Type::INVALID_IP:
-        return "UDP ERROR: Invalid ip";
-    case Type::SEND:
-        return "UDP ERROR: Unable to send";
-    case Type::RECEIVE:
-        return "UDP ERROR: Unable to receive";
-    default:
-        return "UDP ERROR: unknown";
+        case Type::OPT:
+            return "UDP ERROR: Cannot change flags";
+        case Type::BIND:
+            return "UDP ERROR: Cannot bind";
+        case Type::INVALID_IP:
+            return "UDP ERROR: Invalid ip";
+        case Type::SEND:
+            return "UDP ERROR: Unable to send";
+        case Type::RECEIVE:
+            return "UDP ERROR: Unable to receive";
+        default:
+            return "UDP ERROR: unknown";
     }
 }
 
@@ -53,6 +54,10 @@ UdpSocket::UdpSocket(const Host &host) {
 UdpSocket::~UdpSocket() { close(fd); }
 
 size_t UdpSocket::sendTo(const void *data, size_t size, const Host &host) {
+    if (size == 0) {
+        return 0;
+    }
+
     struct in_addr dest = {0};
 
     struct sockaddr_in server = {AF_INET, host.port, {host.ip}, {0}};
