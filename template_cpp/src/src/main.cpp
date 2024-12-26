@@ -5,10 +5,14 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <vector>
 
 #include "agreement.hpp"
 #include "parser.hpp"
 #include "serde.hpp"
+
+static u32 done = 0;
+static std::vector<std::set<u32>> results;
 
 static void stop(int) {
     // reset signal handlers to default
@@ -21,6 +25,18 @@ static void stop(int) {
     // write/flush output file if necessary
     std::cout << "Writing output.\n";
 
+    std::fstream out(config.outputPath(),
+                     std::ios_base::out | std::ios_base::trunc);
+
+    for (const auto &result : results) {
+        for (auto elem : result) {
+            out << elem << " ";
+        }
+        out << "\n";
+    }
+    out.flush();
+    out.close();
+
     // exit directly from signal handler
     exit(0);
 }
@@ -30,6 +46,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, stop);
 
     config.parse(argc, argv);
+    results.resize(config.proposals().size());
 
     std::cout << std::endl;
 
@@ -59,15 +76,17 @@ int main(int argc, char **argv) {
     std::cout << "Doing some initialization...\n\n";
 
     std::cout << "Broadcasting and delivering messages...\n\n";
+    std::cout.flush();
 
     Agreement agreement(config.host(), config.proposals().size());
 
-    std::fstream out(config.outputPath(),
-                     std::ios_base::out | std::ios_base::trunc);
-
     agreement.setCallback([&](u32 lattice_idx, const std::set<u32> &proposal) {
-        std::cout << "[" << lattice_idx << "] Decided " << proposal
-                  << std::endl;
+        results[lattice_idx] = proposal;
+
+        done++;
+        if (done == results.size()) {
+            std::cout << "Done !" << std::endl;
+        }
     });
 
     try {
